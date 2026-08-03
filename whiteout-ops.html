@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>NID Operations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/12.17.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.17.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --bg:#0E1520;
+    --bg-elev:#161F2E;
+    --bg-elev2:#1F2C40;
+    --border:#2A3A52;
+    --ice:#4FD1E8;
+    --ice-dim:#2D5A66;
+    --amber:#F2A65A;
+    --amber-dim:#6B4C29;
+    --text:#EAF2F7;
+    --muted:#7C93AA;
+    --danger:#F0665F;
+    --success:#6FCF97;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(120% 100% at 50% 0%, #142031 0%, var(--bg) 55%);
+    color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:48px;
+  }
+  h1,h2,h3{font-family:'Rajdhani','Inter',sans-serif;font-weight:700;margin:0;}
+  button{font-family:inherit;}
+  .app{max-width:520px;margin:0 auto;padding:0 14px;}
+  .topbar{
+    padding:22px 14px 14px;
+    display:flex;align-items:center;gap:10px;justify-content:space-between;
+    max-width:520px;margin:0 auto;
+  }
+  .topbar-left{display:flex;align-items:center;gap:10px;min-width:0;}
+  .brand-mark{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(155deg,var(--ice),#2C7C8C);
+    display:flex;align-items:center;justify-content:center;
+    font-size:21px;line-height:1;
+    flex:none;
+    box-shadow:0 0 0 1px rgba(79,209,232,0.25), 0 6px 18px -6px rgba(79,209,232,0.5);
+  }
+  .brand h1{
+    font-family:'Mochiy Pop One',sans-serif;font-size:18px;letter-spacing:0.01em;
+    font-weight:400;color:var(--ice);
+    text-shadow:0 0 12px rgba(79,209,232,0.35);
+  }
+  .brand .sub{display:block;font-size:11px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase;margin-top:2px;}
+  .admin-btn{
+    flex:none;background:var(--bg-elev);border:1px solid var(--border);color:var(--muted);
+    font-size:12px;font-weight:600;padding:8px 12px;border-radius:999px;cursor:pointer;min-height:36px;
+    white-space:nowrap;
+  }
+  .admin-btn.admin-on{background:rgba(111,207,151,0.14);border-color:var(--success);color:var(--success);}
+
+  .tabs{
+    display:flex;gap:6px;max-width:520px;margin:0 auto;padding:0 14px 12px;
+    position:sticky;top:0;z-index:20;
+    background:linear-gradient(180deg, var(--bg) 70%, transparent);
+    padding-top:6px;
+  }
+  .tab-btn{
+    flex:1;padding:11px 8px;border-radius:11px;border:1px solid var(--border);
+    background:var(--bg-elev);color:var(--muted);font-weight:600;font-size:13.5px;
+    letter-spacing:0.01em;cursor:pointer;transition:background .15s,color .15s,border-color .15s;
+    min-height:44px;
+  }
+  .tab-btn.tab-active{
+    background:linear-gradient(155deg, rgba(79,209,232,0.16), rgba(79,209,232,0.04));
+    border-color:var(--ice);color:var(--ice);
+  }
+  .tab-btn:focus-visible{outline:2px solid var(--ice);outline-offset:2px;}
+
+  main{padding-top:4px;}
+
+  .panel{
+    background:var(--bg-elev);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .panel-title{
+    font-size:15px;letter-spacing:0.03em;color:var(--text);
+    display:flex;align-items:baseline;gap:8px;margin-bottom:12px;
+    text-transform:uppercase;
+  }
+  .panel-title .hint{
+    font-family:'Inter',sans-serif;text-transform:none;font-weight:400;
+    font-size:11.5px;color:var(--muted);letter-spacing:0;
+  }
+  .mode-note{font-size:11.5px;color:var(--muted);margin:-4px 0 12px;}
+
+  .add-row{display:flex;gap:8px;margin-bottom:12px;}
+  input[type="text"], input[type="password"], textarea{
+    background:var(--bg-elev2);border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:11px 12px;font-size:14.5px;width:100%;
+    font-family:inherit;
+  }
+  input:focus, textarea:focus, select:focus{
+    outline:2px solid var(--ice);outline-offset:1px;border-color:var(--ice);
+  }
+  .add-row input{flex:1;min-width:0;}
+
+  .btn{
+    border-radius:10px;border:1px solid transparent;padding:11px 16px;
+    font-weight:600;font-size:14px;cursor:pointer;min-height:44px;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn-ice{background:var(--ice);color:#06161B;}
+  .btn-ice:hover{filter:brightness(1.08);}
+  .btn-primary{background:linear-gradient(155deg,var(--ice),#3AA8BC);color:#06161B;}
+  .btn-outline{background:transparent;border-color:var(--border);color:var(--text);}
+  .btn-danger-fill{background:var(--danger);color:#2A0A08;}
+  .btn-block{width:100%;}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .link-btn{
+    background:none;border:none;color:var(--muted);font-size:12.5px;
+    padding:6px 2px;cursor:pointer;text-decoration:underline;min-height:32px;
+  }
+
+  .member-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
+  .member-row{
+    display:flex;flex-direction:column;gap:8px;
+    background:var(--bg-elev2);border:1px solid var(--border);border-radius:10px;
+    padding:8px 10px;
+  }
+  .member-top{display:flex;align-items:center;gap:10px;}
+  .rank-badge{
+    width:24px;height:24px;border-radius:7px;background:var(--bg);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;
+    font-weight:700;font-size:12.5px;color:var(--ice);flex:none;
+  }
+  .member-name{flex:1;font-size:14.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .row-actions{display:flex;gap:2px;flex:none;}
+  .row-actions button{
+    background:none;border:none;color:var(--muted);font-size:13px;width:30px;height:30px;
+    border-radius:7px;cursor:pointer;
+  }
+  .row-actions button:not(:disabled):hover{background:var(--bg-elev);color:var(--text);}
+  .row-actions button:disabled{opacity:0.25;cursor:not-allowed;}
+
+  .add-row-wrap{margin-bottom:12px;}
+  .add-meta-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;}
+  .member-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding-left:2px;}
+  .meta-select{
+    width:auto;flex:none;padding:6px 7px;font-size:11.5px;border-radius:7px;
+    background:var(--bg-elev2);border:1px solid var(--border);color:var(--text);
+  }
+  .meta-check{
+    display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);
+    background:var(--bg);border:1px solid var(--border);padding:5px 8px;border-radius:7px;cursor:pointer;
+  }
+  .meta-check input{margin:0;}
+  .meta-check.checked{color:var(--text);border-color:var(--ice-dim);background:rgba(79,209,232,0.08);}
+  .online-toggle{
+    font-size:11.5px;padding:5px 9px;border-radius:7px;border:1px solid var(--border);cursor:pointer;
+    background:var(--bg);color:var(--muted);
+  }
+  .online-toggle.online{color:var(--success);border-color:var(--success);background:rgba(111,207,151,0.08);}
+  .online-toggle.offline{color:var(--danger);border-color:var(--danger);background:rgba(240,102,95,0.08);}
+  .meta-badge{
+    font-size:11px;color:var(--muted);background:var(--bg);border:1px solid var(--border);
+    padding:4px 8px;border-radius:7px;
+  }
+  .member-row-off{opacity:0.55;}
+  .participate-check{flex:none;width:18px;height:18px;accent-color:var(--amber);cursor:pointer;}
+  .participate-dot{flex:none;font-size:13px;}
+  .meta-select.power-input, input.power-input{
+    width:110px !important;flex:none;
+  }
+  .meta-badge.online{color:var(--success);border-color:var(--success);}
+  .meta-badge.offline{color:var(--danger);border-color:var(--danger);}
+
+  .note{font-size:12px;color:var(--muted);margin:8px 2px 0;text-align:center;}
+
+  .view-toggle{display:flex;gap:6px;margin-bottom:14px;}
+  .view-toggle button{
+    flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);
+    background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;
+    min-height:38px;
+  }
+  .view-toggle button.active{background:var(--bg-elev2);color:var(--text);border-color:var(--ice);}
+
+  .rotation-svg{width:100%;height:auto;display:block;margin:4px auto 10px;max-width:280px;}
+  .legend{
+    display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:12px;color:var(--muted);
+    margin-bottom:4px;
+  }
+  .legend span.n{color:var(--ice);font-family:'Rajdhani',sans-serif;font-weight:700;margin-right:5px;}
+
+  .sender-row{
+    border-top:1px solid var(--border);padding:12px 0;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .sender-row:first-child{border-top:none;}
+  .sender-head{display:flex;align-items:center;gap:8px;}
+  .sender-head .rank-badge{background:var(--bg);}
+  .sender-head .name{font-weight:600;font-size:14.5px;flex:1;}
+  .copy-mini{
+    background:none;border:1px solid var(--border);color:var(--muted);
+    font-size:11.5px;padding:5px 9px;border-radius:7px;cursor:pointer;min-height:30px;
+  }
+  .copy-mini:hover{color:var(--text);border-color:var(--ice);}
+  .target-selects{display:flex;gap:8px;}
+  .target-selects label{
+    flex:1;font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:4px;
+  }
+  select{
+    background:var(--bg-elev2);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:8px 8px;font-size:13.5px;font-family:inherit;width:100%;
+  }
+  select:disabled{opacity:0.7;}
+  select.sel-ice{border-color:var(--ice-dim);}
+  select.sel-amber{border-color:var(--amber-dim);}
+  .pin-row{display:flex;gap:5px;align-items:center;}
+  .pin-btn{
+    flex:none;background:none;border:1px solid var(--border);border-radius:8px;
+    width:34px;height:34px;font-size:14px;color:var(--muted);cursor:pointer;
+  }
+  .pin-btn.pinned{background:rgba(242,166,90,0.18);border-color:var(--amber);color:var(--amber);}
+  .readonly-target{font-size:13.5px;padding:8px 0;color:var(--text);}
+  .readonly-target .arrow{color:var(--muted);margin:0 4px;}
+
+  .city-card{
+    border-top:1px solid var(--border);padding:12px 0;
+  }
+  .city-card:first-child{border-top:none;}
+  .city-title{font-weight:600;font-size:14.5px;margin-bottom:6px;}
+  .city-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+  .city-title-name{font-weight:600;font-size:14.5px;}
+  .city-in{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;margin-top:6px;color:var(--text);}
+  .city-in-names{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;}
+  .in-name{display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+  .mini-badges{display:inline-flex;gap:3px;margin-left:5px;flex-wrap:wrap;}
+  .mini-badge{
+    font-size:10px;padding:1px 5px;border-radius:5px;background:var(--bg);
+    border:1px solid var(--border);color:var(--muted);white-space:nowrap;line-height:1.6;
+  }
+  .mini-badge.online{color:var(--success);border-color:var(--success);}
+  .mini-badge.offline{color:var(--danger);border-color:var(--danger);}
+  .tag{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:0.03em;
+    padding:2px 7px;border-radius:6px;flex:none;
+  }
+  .tag-ice{background:rgba(79,209,232,0.14);color:var(--ice);}
+  .tag-amber{background:rgba(242,166,90,0.16);color:var(--amber);}
+  .city-in.warn{color:var(--danger);}
+
+  .announce-box{
+    background:var(--bg-elev2);border:1px solid var(--border);border-radius:10px;
+    padding:12px;font-size:12.5px;line-height:1.7;white-space:pre-wrap;color:var(--muted);
+    max-height:160px;overflow-y:auto;margin-bottom:10px;font-family:'SFMono-Regular',Consolas,monospace;
+  }
+
+  .category-pills{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;}
+  .category-pills::-webkit-scrollbar{display:none;}
+  .pill{
+    flex:none;padding:9px 14px;border-radius:999px;border:1px solid var(--border);
+    background:var(--bg-elev2);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;
+    white-space:nowrap;min-height:40px;
+  }
+  .pill-active{background:rgba(242,166,90,0.14);border-color:var(--amber);color:var(--amber);}
+  .pill-add{color:var(--muted);border-style:dashed;}
+
+  .notice-card{
+    background:var(--bg-elev2);border:1px solid var(--border);border-radius:12px;
+    padding:13px;margin-bottom:10px;
+  }
+  .notice-head{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;}
+  .notice-head h3{font-size:14.5px;flex:1;line-height:1.4;}
+  .notice-actions{display:flex;gap:2px;flex:none;}
+  .notice-actions button{background:none;border:none;color:var(--muted);font-size:14px;width:30px;height:30px;border-radius:7px;cursor:pointer;}
+  .notice-actions button:hover{background:var(--bg-elev);color:var(--text);}
+  .notice-body{
+    white-space:pre-wrap;font-size:13px;line-height:1.7;color:var(--text);
+    font-family:inherit;margin:0 0 10px;cursor:pointer;
+  }
+  .empty-state{text-align:center;padding:26px 10px;color:var(--muted);font-size:13px;}
+  .suggest-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:5px;}
+  .suggest-item{
+    width:100%;text-align:left;background:var(--bg-elev2);border:1px solid var(--border);
+    border-radius:9px;padding:9px 11px;color:var(--text);font-size:13.5px;cursor:pointer;
+    display:flex;align-items:center;flex-wrap:wrap;gap:4px;min-height:44px;
+  }
+  .suggest-item:hover{border-color:var(--ice);}
+
+  .toast{
+    position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(10px);
+    background:var(--text);color:#0E1520;font-weight:600;font-size:13px;
+    padding:10px 18px;border-radius:999px;opacity:0;pointer-events:none;
+    transition:opacity .18s, transform .18s;z-index:100;max-width:88vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .modal-root{position:relative;}
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(6,10,16,0.6);z-index:40;opacity:0;pointer-events:none;transition:opacity .15s;
+  }
+  .modal-root.show .modal-backdrop{opacity:1;pointer-events:auto;}
+  .modal{
+    position:fixed;left:14px;right:14px;bottom:14px;z-index:41;
+    background:var(--bg-elev);border:1px solid var(--border);border-radius:16px;
+    padding:18px;max-width:492px;margin:0 auto;
+    transform:translateY(12px);opacity:0;pointer-events:none;transition:opacity .15s, transform .15s;
+  }
+  .modal-root.show .modal{opacity:1;transform:translateY(0);pointer-events:auto;}
+  .modal h3{font-size:15px;margin-bottom:12px;}
+  .modal p{font-size:14px;line-height:1.6;margin:0 0 16px;}
+  .modal input, .modal textarea{margin-bottom:10px;}
+  .modal textarea{resize:vertical;min-height:110px;}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;flex-wrap:wrap;}
+  .modal-actions .btn{min-width:96px;}
+  .modal-error{color:var(--danger);font-size:12.5px;margin:-4px 0 10px;}
+  .cat-edit-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;max-height:50vh;overflow-y:auto;}
+  .cat-edit-row{
+    display:flex;gap:8px;align-items:center;background:var(--bg-elev2);
+    border:1px solid var(--border);border-radius:9px;padding:4px 8px 4px 4px;
+    transition:none;
+  }
+  .cat-edit-row.dragging{
+    box-shadow:0 8px 20px -6px rgba(0,0,0,0.5);border-color:var(--ice);
+    background:var(--bg-elev);
+  }
+  .cat-edit-row input{flex:1;min-width:0;margin-bottom:0;background:transparent;border-color:transparent;}
+  .cat-edit-row input:focus{background:var(--bg-elev2);border-color:var(--ice);}
+  .drag-handle{
+    flex:none;width:38px;height:38px;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-size:18px;cursor:grab;touch-action:none;user-select:none;
+    -webkit-user-select:none;border-radius:8px;
+  }
+  .drag-handle:active{cursor:grabbing;color:var(--ice);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="brand-mark">💩</div>
+      <div class="brand">
+        <h1>NID Operations</h1>
+        <span class="sub">Alliance Ops Console</span>
+      </div>
+    </div>
+    <div id="admin-slot"></div>
+  </div>
+  <nav class="tabs">
+    <button class="tab-btn" id="tab-match" data-action="set-tab" data-tab="match">援軍マッチング</button>
+    <button class="tab-btn" id="tab-notice" data-action="set-tab" data-tab="notice">お知らせ配信</button>
+    <button class="tab-btn" id="tab-manage" data-action="set-tab" data-tab="manage">管理</button>
+  </nav>
+  <div class="app">
+    <main id="content"></main>
+  </div>
+  <div class="modal-root" id="modal-root"></div>
+  <div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var state = {
+    tab: 'match',
+    loaded: false,
+    isAdmin: false,
+    adminPin: '0000',
+    members: [],
+    target1: [],
+    target2: [],
+    pinned1: {},
+    pinned2: {},
+    label1: '①1軍',
+    label2: '②2軍',
+    matchView: 'city',
+    rosterSort: 'default',
+    participantSearchQuery: '',
+    noticeCategories: [],
+    activeCategory: null,
+    modal: null
+  };
+
+  var toastTimer = null;
+
+  function defaultNoticeCategories(){
+    return [
+      { id:'cat_event', name:'イベント告知', templates:[
+        { id:'tpl_e1', title:'クレイジージョイ 開催告知', body:'【クレイジージョイ開催】\n本日〇時よりクレイジージョイが開催されます。\n援軍マッチングは別アプリで組みますので、指定された都市に援軍をお願いします。\n開始5分前には準備をお願いします!' },
+        { id:'tpl_e2', title:'本部決戦 参加募集', body:'【本部決戦 参加者募集】\n〇日の本部決戦、駐屯側の参加者を募集します。\n参加できる方はスタンプでお知らせください!' }
+      ]},
+      { id:'cat_rally', name:'集結', templates:[
+        { id:'tpl_r1', title:'熊狩り 集結告知', body:'【熊狩り 集結】\n〇時から熊狩りの集結を行います。\n集合場所と出発時間を確認のうえ、時間までに整列をお願いします!' },
+        { id:'tpl_r2', title:'城主決戦 集結告知', body:'【城主決戦】\n〇時より城主決戦の集結を行います。\n編成の指示があるまで待機をお願いします。' }
+      ]},
+      { id:'cat_rules', name:'注意事項・ルール', templates:[
+        { id:'tpl_u1', title:'援軍ルールについて', body:'【援軍ルールについて】\n指定された2援軍以外は入れないようお願いします。\n誤って入ってしまった場合はすぐに返却をお願いします。' },
+        { id:'tpl_u2', title:'同盟の基本ルール', body:'【同盟ルール】\n・イベント参加は任意ですが、できる限りのご協力をお願いします\n・不明点は同盟チャットで気軽に質問してください\n・お互い気持ちよく遊べる同盟を目指しましょう' }
+      ]},
+      { id:'cat_other', name:'その他', templates:[] }
+    ];
+  }
+
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function activeMembers(){
+    return state.members.filter(function(m){ return m.participating !== false; });
+  }
+
+  function genId(prefix){ return prefix + '_' + Date.now() + '_' + Math.floor(Math.random()*1000); }
+
+  var db = null;
+  var matchingLoaded = false, noticesLoaded = false, pinLoaded = false;
+
+  function normalizeMember(x){
+    if(typeof x === 'string') return { name:x, fcLevel:null, fcType:'crystal', power:'', shield:false, online:true, participating:true };
+    var fcLevel = x.fcLevel != null ? x.fcLevel : (x.fc != null ? x.fc : null);
+    var fcType = x.fcType || 'crystal';
+    return { name:x.name||'', fcLevel: fcLevel, fcType: fcType, power: x.power || '', shield:!!x.shield, online: x.online!==false, participating: x.participating!==false };
+  }
+
+  function checkAllLoaded(){
+    if(matchingLoaded && noticesLoaded && pinLoaded) state.loaded = true;
+    render();
+  }
+
+  function initFirebaseSync(){
+    try{
+      if(!window.firebase){ throw new Error('firebase sdk not loaded'); }
+      var firebaseConfig = {
+        apiKey: "AIzaSyD_a2CJ8PeN_H2M4KmyDRI2BQGWcBRtecw",
+        authDomain: "nid-operations.firebaseapp.com",
+        databaseURL: "https://nid-operations-default-rtdb.firebaseio.com",
+        projectId: "nid-operations",
+        storageBucket: "nid-operations.firebasestorage.app",
+        messagingSenderId: "336802538936",
+        appId: "1:336802538936:web:fdc7fa738108d1ff009b4d"
+      };
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+
+      db.ref('wos-matching').on('value', function(snap){
+        try{
+          var raw = snap.val();
+          if(raw){
+            var mObj = JSON.parse(raw);
+            state.members = (mObj.members || []).map(normalizeMember);
+            state.target1 = mObj.target1 || [];
+            state.target2 = mObj.target2 || [];
+            state.pinned1 = mObj.pinned1 || {};
+            state.pinned2 = mObj.pinned2 || {};
+            state.label1 = mObj.label1 || '①1軍';
+            state.label2 = mObj.label2 || '②2軍';
+          }
+        }catch(e){}
+        matchingLoaded = true;
+        checkAllLoaded();
+      }, function(){ matchingLoaded = true; checkAllLoaded(); });
+
+      db.ref('wos-notices').on('value', function(snap){
+        try{
+          var raw = snap.val();
+          state.noticeCategories = raw ? JSON.parse(raw) : defaultNoticeCategories();
+        }catch(e){
+          state.noticeCategories = defaultNoticeCategories();
+        }
+        if(!state.activeCategory && state.noticeCategories.length) state.activeCategory = state.noticeCategories[0].id;
+        noticesLoaded = true;
+        checkAllLoaded();
+      }, function(){
+        state.noticeCategories = defaultNoticeCategories();
+        state.activeCategory = state.noticeCategories[0].id;
+        noticesLoaded = true;
+        checkAllLoaded();
+      });
+
+      db.ref('wos-admin-pin').on('value', function(snap){
+        try{
+          var raw = snap.val();
+          if(raw) state.adminPin = raw;
+        }catch(e){}
+        pinLoaded = true;
+        checkAllLoaded();
+      }, function(){ pinLoaded = true; checkAllLoaded(); });
+
+    }catch(e){
+      state.noticeCategories = defaultNoticeCategories();
+      state.activeCategory = state.noticeCategories[0].id;
+      state.loaded = true;
+      state.firebaseError = true;
+      render();
+    }
+  }
+
+  function saveMatching(){
+    if(!db) return;
+    try{
+      db.ref('wos-matching').set(JSON.stringify({
+        members: state.members, target1: state.target1, target2: state.target2,
+        pinned1: state.pinned1, pinned2: state.pinned2,
+        label1: state.label1, label2: state.label2
+      })).catch(function(){});
+    }catch(e){}
+  }
+  function saveNotices(){
+    if(!db) return;
+    try{
+      db.ref('wos-notices').set(JSON.stringify(state.noticeCategories)).catch(function(){});
+    }catch(e){}
+  }
+  function saveAdminPin(){
+    if(!db) return;
+    try{
+      db.ref('wos-admin-pin').set(state.adminPin).catch(function(){});
+    }catch(e){}
+  }
+
+  function resetAssignments(){
+    state.target1 = []; state.target2 = []; state.pinned1 = {}; state.pinned2 = {};
+  }
+  function moveMember(idx, dir){
+    if(!state.isAdmin) return;
+    var newIdx = idx + dir;
+    if(newIdx < 0 || newIdx >= state.members.length) return;
+    var arr = state.members;
+    var tmp = arr[idx]; arr[idx] = arr[newIdx]; arr[newIdx] = tmp;
+    resetAssignments();
+    saveMatching(); render();
+  }
+  function removeMember(idx){
+    if(!state.isAdmin) return;
+    state.members.splice(idx,1);
+    resetAssignments();
+    saveMatching(); render();
+  }
+
+  function parseFcText(fcRaw){
+    if(!fcRaw) return null;
+    var mLv = fcRaw.match(/^lv\.?\s*(\d+)/i);
+    if(mLv) return { fcType:'furnace', fcLevel: parseInt(mLv[1],10) };
+    var mCrystal = fcRaw.match(/^火晶\s*(\d+)/);
+    if(mCrystal) return { fcType:'crystal', fcLevel: parseInt(mCrystal[1],10) };
+    var mNum = fcRaw.match(/\d+/);
+    if(mNum) return { fcType:'crystal', fcLevel: parseInt(mNum[0],10) };
+    return null;
+  }
+
+  function runBulkAdd(){
+    if(!state.isAdmin) return;
+    var ta = document.getElementById('bulk-input');
+    if(!ta) return;
+    var text = ta.value;
+    var lines = text.split('\n');
+    var addedNew = false;
+    var updatedCount = 0, addedCount = 0;
+    lines.forEach(function(line){
+      line = line.trim();
+      if(!line) return;
+      var parts = line.split(',').map(function(p){ return p.trim(); });
+      var name = parts[0];
+      if(!name) return;
+      var power = parts[1] || '';
+      var fcRaw = parts[2] || '';
+      var fcParsed = parseFcText(fcRaw);
+      var existing = state.members.find(function(m){ return m.name === name; });
+      if(existing){
+        if(power !== '') existing.power = power;
+        if(fcParsed){ existing.fcLevel = fcParsed.fcLevel; existing.fcType = fcParsed.fcType; }
+        updatedCount++;
+      } else {
+        state.members.push({
+          name: name,
+          fcLevel: fcParsed ? fcParsed.fcLevel : null,
+          fcType: fcParsed ? fcParsed.fcType : 'crystal',
+          power: power,
+          shield: false,
+          online: true,
+          participating: false
+        });
+        addedNew = true;
+        addedCount++;
+      }
+    });
+    saveMatching();
+    ta.value = '';
+    render();
+    showToast('登録'+addedCount+'件・更新'+updatedCount+'件しました');
+  }
+
+  function circDist(a,b,n){ var d=Math.abs(a-b); return Math.min(d,n-d); }
+
+  function shuffleArr(arr){
+    for(var i=arr.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var tmp = arr[i]; arr[i]=arr[j]; arr[j]=tmp;
+    }
+    return arr;
+  }
+
+  function solveAssignment(n, pins, avoid){
+    var target = new Array(n).fill(null);
+    var used = new Array(n).fill(false);
+    var i;
+    for(i=0;i<n;i++){
+      if(pins && pins[i] != null && pins[i] !== ''){
+        var pv = parseInt(pins[i],10);
+        target[i] = pv;
+        used[pv] = true;
+      }
+    }
+    var order = [];
+    for(i=0;i<n;i++){ if(target[i]==null) order.push(i); }
+    shuffleArr(order);
+
+    function backtrack(pos){
+      if(pos === order.length) return true;
+      var idx = order[pos];
+      var candidates = [];
+      for(var j=0;j<n;j++){
+        if(j===idx) continue;
+        if(used[j]) continue;
+        if(avoid && avoid[idx]===j) continue;
+        candidates.push(j);
+      }
+      shuffleArr(candidates);
+      for(var k=0;k<candidates.length;k++){
+        var j2 = candidates[k];
+        target[idx]=j2; used[j2]=true;
+        if(backtrack(pos+1)) return true;
+        target[idx]=null; used[j2]=false;
+      }
+      return false;
+    }
+
+    var success = backtrack(0);
+    if(!success){
+      used = new Array(n).fill(false);
+      for(i=0;i<n;i++){ if(target[i]!=null) used[target[i]]=true; }
+      var remaining = [];
+      for(var j=0;j<n;j++){ if(!used[j]) remaining.push(j); }
+      shuffleArr(remaining);
+      for(i=0;i<n;i++){
+        if(target[i]==null){
+          var chosen = null;
+          for(var m=0;m<remaining.length;m++){
+            if(remaining[m]!==i){ chosen=remaining[m]; remaining.splice(m,1); break; }
+          }
+          if(chosen==null && remaining.length){ chosen=remaining.shift(); }
+          target[i]=chosen;
+        }
+      }
+    }
+    return target;
+  }
+
+  function autoMatch(){
+    if(!state.isAdmin) return;
+    var active = activeMembers();
+    var n = active.length;
+    if(n < 3) return;
+    var t1 = solveAssignment(n, state.pinned1, null);
+    var t2 = solveAssignment(n, state.pinned2, t1);
+    state.target1 = t1;
+    state.target2 = t2;
+    if(!state.matchView) state.matchView = 'city';
+    saveMatching(); render();
+  }
+
+  function togglePin(cat, idx){
+    if(!state.isAdmin) return;
+    var pinnedMap = cat === 1 ? state.pinned1 : state.pinned2;
+    var targetArr = cat === 1 ? state.target1 : state.target2;
+    if(Object.prototype.hasOwnProperty.call(pinnedMap, idx)){
+      delete pinnedMap[idx];
+    } else {
+      var val = targetArr[idx];
+      if(val == null || val === ''){ showToast('先に送り先を選択してください'); return; }
+      var conflict = Object.keys(pinnedMap).some(function(k){
+        return String(pinnedMap[k]) === String(val) && parseInt(k,10) !== idx;
+      });
+      if(conflict){ showToast('その送り先は既に固定されています'); return; }
+      pinnedMap[idx] = val;
+    }
+    saveMatching(); render();
+  }
+
+  function togglePinFromCity(cat, targetIdx){
+    if(!state.isAdmin) return;
+    var pinnedMap = cat === 1 ? state.pinned1 : state.pinned2;
+    var targetArr = cat === 1 ? state.target1 : state.target2;
+    var senderIdx = null;
+    for(var s=0; s<targetArr.length; s++){ if(targetArr[s] === targetIdx){ senderIdx = s; break; } }
+    if(senderIdx == null){ showToast('先に送り元を選択してください'); return; }
+    if(Object.prototype.hasOwnProperty.call(pinnedMap, senderIdx) && pinnedMap[senderIdx] === targetIdx){
+      delete pinnedMap[senderIdx];
+    } else {
+      var conflict = Object.keys(pinnedMap).some(function(k){
+        return String(pinnedMap[k]) === String(targetIdx) && parseInt(k,10) !== senderIdx;
+      });
+      if(conflict){ showToast('その送り先は既に固定されています'); return; }
+      pinnedMap[senderIdx] = targetIdx;
+    }
+    saveMatching(); render();
+  }
+
+  function displayName(name){
+    var result = name;
+    var atMatch = result.match(/^(.*?)[@＠](.+)$/);
+    if(atMatch) result = atMatch[2];
+    result = result.replace(/NID$/i, '');
+    return result.trim() || name;
+  }
+
+  function buildArmyText(cat){
+    var active = activeMembers();
+    var targetArr = cat === 1 ? state.target1 : state.target2;
+    var label = cat === 1 ? state.label1 : state.label2;
+    var lines = [label];
+    active.forEach(function(m,i){
+      if(targetArr[i] != null && targetArr[i] !== '') lines.push(displayName(m.name) + '⇒' + displayName(active[targetArr[i]].name));
+    });
+    return lines.join('\n');
+  }
+  function buildIndividualText(i){
+    var active = activeMembers();
+    var m = active[i];
+    var t1 = state.target1[i], t2 = state.target2[i];
+    var lines = ['【' + m.name + '】'];
+    lines.push(state.label1 + ' → ' + (t1!=null && t1!=='' ? active[t1].name : '未設定'));
+    lines.push(state.label2 + ' → ' + (t2!=null && t2!=='' ? active[t2].name : '未設定'));
+    return lines.join('\n');
+  }
+  function buildNoReinforcementText(){
+    var active = activeMembers();
+    var lines = ['【本日の援軍不要都市】'];
+    active.forEach(function(m){ lines.push('・' + m.name); });
+    return lines.join('\n');
+  }
+
+  function copyText(text){
+    function ok(){ showToast('コピーしました'); }
+    function fallback(){
+      try{
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        ok();
+      }catch(e){ showToast('コピーに失敗しました'); }
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(ok).catch(fallback);
+    } else { fallback(); }
+  }
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  function generateDiagramSVG(active){
+    var n = active.length;
+    if(n < 3 || state.target1.length !== n) return '';
+    var cx=150, cy=150, r=104, nodeR=15;
+    var pts = [];
+    for(var i=0;i<n;i++){
+      var ang = -Math.PI/2 + i*(2*Math.PI/n);
+      pts.push([cx + r*Math.cos(ang), cy + r*Math.sin(ang)]);
+    }
+    function shrink(p1,p2,amt){
+      var dx=p2[0]-p1[0], dy=p2[1]-p1[1];
+      var len = Math.sqrt(dx*dx+dy*dy) || 1;
+      return [p2[0]-dx/len*amt, p2[1]-dy/len*amt];
+    }
+    function arcPath(p1,p2,bend){
+      var mx=(p1[0]+p2[0])/2, my=(p1[1]+p2[1])/2;
+      var nx=mx-cx, ny=my-cy;
+      var len = Math.sqrt(nx*nx+ny*ny) || 1;
+      nx/=len; ny/=len;
+      var k = bend * (n<=5 ? 20 : 30);
+      var ctrl = [mx + nx*k, my + ny*k];
+      var start = shrink(p2,p1,nodeR+3);
+      var end = shrink(p1,p2,nodeR+5);
+      return 'M ' + start[0].toFixed(1) + ' ' + start[1].toFixed(1) + ' Q ' + ctrl[0].toFixed(1) + ' ' + ctrl[1].toFixed(1) + ' ' + end[0].toFixed(1) + ' ' + end[1].toFixed(1);
+    }
+    var paths = '';
+    for(i=0;i<n;i++){
+      var t1 = state.target1[i], t2 = state.target2[i];
+      if(t1 != null && t1 !== '' && pts[t1]) paths += '<path d="' + arcPath(pts[i], pts[t1], 1) + '" stroke="var(--ice)" stroke-width="2.4" fill="none" opacity="0.85" marker-end="url(#arrIce)"/>';
+      if(t2 != null && t2 !== '' && pts[t2]) paths += '<path d="' + arcPath(pts[i], pts[t2], -1) + '" stroke="var(--amber)" stroke-width="2.4" fill="none" opacity="0.85" marker-end="url(#arrAmber)"/>';
+    }
+    var nodes = '';
+    for(i=0;i<n;i++){
+      nodes += '<circle cx="'+pts[i][0].toFixed(1)+'" cy="'+pts[i][1].toFixed(1)+'" r="'+nodeR+'" fill="#1F2C40" stroke="#2A3A52" stroke-width="1.5"/>';
+      nodes += '<text x="'+pts[i][0].toFixed(1)+'" y="'+(pts[i][1]+4.5).toFixed(1)+'" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="700" font-size="13" fill="#EAF2F7">'+(i+1)+'</text>';
+    }
+    return '<svg class="rotation-svg" viewBox="0 0 300 300" role="img" aria-label="援軍ローテーション図">' +
+      '<defs>' +
+      '<marker id="arrIce" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#4FD1E8"/></marker>' +
+      '<marker id="arrAmber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#F2A65A"/></marker>' +
+      '</defs>' + paths + nodes + '</svg>';
+  }
+
+  function findCategory(id){
+    return state.noticeCategories.find(function(c){ return c.id === id; });
+  }
+  function findNotice(id){
+    for(var i=0;i<state.noticeCategories.length;i++){
+      var t = state.noticeCategories[i].templates.find(function(x){ return x.id === id; });
+      if(t) return t;
+    }
+    return null;
+  }
+  function deleteNotice(id){
+    if(!state.isAdmin) return;
+    state.noticeCategories.forEach(function(c){
+      c.templates = c.templates.filter(function(x){ return x.id !== id; });
+    });
+    saveNotices(); render();
+  }
+  function deleteCategory(id){
+    if(!state.isAdmin) return;
+    state.noticeCategories = state.noticeCategories.filter(function(c){ return c.id !== id; });
+    if(state.activeCategory === id){
+      state.activeCategory = state.noticeCategories.length ? state.noticeCategories[0].id : null;
+    }
+    saveNotices(); render();
+  }
+
+  function renderMatchTab(){
+    var total = state.members.length;
+    var active = activeMembers();
+    var n = active.length;
+    var html = '';
+
+    html += '<section class="panel">';
+    html += '<h2 class="panel-title">今回参加メンバー <span class="hint">名簿から検索して追加</span></h2>';
+    if(state.isAdmin){
+      if(total === 0){
+        html += '<p class="mode-note">名簿にメンバーがいません。「管理」タブでまず名簿に登録してください。</p>';
+      } else {
+        html += '<input type="text" id="participant-search-input" placeholder="名前で検索して追加" autocomplete="off" value="'+escapeHtml(state.participantSearchQuery||'')+'" />';
+        var query = (state.participantSearchQuery||'').trim();
+        if(query){
+          var suggestions = state.members
+            .map(function(m,i){ return { m:m, origIndex:i }; })
+            .filter(function(pair){ return pair.m.participating===false && pair.m.name.indexOf(query) !== -1; })
+            .slice(0, 8);
+          if(suggestions.length){
+            html += '<ul class="suggest-list">';
+            suggestions.forEach(function(pair){
+              html += '<li><button type="button" class="suggest-item" data-action="add-participant" data-idx="'+pair.origIndex+'">'+escapeHtml(pair.m.name)+metaBadgesHtml(pair.m)+'</button></li>';
+            });
+            html += '</ul>';
+          } else {
+            html += '<p class="note">候補が見つかりません(名簿にいない、または既に参加中の可能性があります)</p>';
+          }
+        }
+      }
+    }
+    if(n){
+      html += '<div class="view-toggle" style="margin-bottom:8px;">' +
+        '<button class="'+(state.rosterSort==='default'?'active':'')+'" data-action="set-roster-sort" data-sort="default">名簿順</button>' +
+        '<button class="'+(state.rosterSort==='combined'?'active':'')+'" data-action="set-roster-sort" data-sort="combined">レベル+総力順</button>' +
+        '</div>';
+      html += '<p class="note" style="margin:0 0 8px;">今回参加: '+n+'人 / 登録 '+total+'人</p>';
+      var pOrder = active.map(function(m,i){ return { m:m, origIndex:i }; });
+      if(state.rosterSort === 'combined'){
+        pOrder.sort(function(a,b){
+          var d = levelScore(b.m) - levelScore(a.m);
+          return d !== 0 ? d : parsePowerValue(b.m.power) - parsePowerValue(a.m.power);
+        });
+      }
+      html += '<ul class="member-list">';
+      pOrder.forEach(function(pair){
+        var m = pair.m;
+        var rosterIdx = state.members.indexOf(m);
+        html += '<li class="member-row">';
+        html += '<div class="member-top">';
+        html += '<span class="rank-badge">'+(pair.origIndex+1)+'</span>';
+        html += '<span class="member-name">'+escapeHtml(m.name)+'</span>';
+        if(state.isAdmin){
+          html += '<span class="row-actions"><button data-action="remove-participant" data-idx="'+rosterIdx+'" aria-label="今回参加から外す">✕</button></span>';
+        }
+        html += '</div>';
+        html += '<div class="member-meta">' + metaBadgesHtml(m) + '</div>';
+        html += '</li>';
+      });
+      html += '</ul>';
+    } else if(total > 0){
+      html += '<p class="empty-state">今回参加のメンバーがまだいません。上の検索欄で追加するか、「管理」タブの名簿で☑を付けてください。</p>';
+    }
+    html += '</section>';
+
+    if(state.isAdmin){
+      html += '<section class="panel">';
+      html += '<button class="btn btn-primary btn-block" data-action="auto-match" '+(n<3?'disabled':'')+'>自動マッチングを作成</button>';
+      if(n < 3) html += '<p class="note">今回参加が3人以上でマッチングを作成できます</p>';
+      html += '<p class="note">📌固定した組み合わせは、自動マッチングを実行しても変わりません</p>';
+      html += '</section>';
+    }
+
+    var hasMatch = state.target1.length === n && n >= 3;
+    if(hasMatch){
+      html += '<section class="panel">';
+      html += '<h2 class="panel-title">ローテーション図</h2>';
+      html += generateDiagramSVG(active);
+      var legend = '<div class="legend">';
+      active.forEach(function(m,i){ legend += '<div><span class="n">'+(i+1)+'</span>'+escapeHtml(displayName(m.name))+'</div>'; });
+      legend += '</div>';
+      html += legend;
+      html += '<p class="note" style="margin-top:10px;"><span style="color:var(--ice)">━</span> 1軍　　<span style="color:var(--amber)">━</span> 2軍</p>';
+      html += '</section>';
+
+      html += '<section class="panel">';
+      html += '<div class="view-toggle">';
+      html += '<button class="'+(state.matchView==='city'?'active':'')+'" data-action="toggle-view" data-view="city">都市(受け手)ごと</button>';
+      html += '<button class="'+(state.matchView==='sender'?'active':'')+'" data-action="toggle-view" data-view="sender">送り手ごと</button>';
+      html += '</div>';
+
+      if(state.matchView === 'city'){
+        var incoming1 = {}, incoming2 = {};
+        active.forEach(function(_,i){ incoming1[i]=[]; incoming2[i]=[]; });
+        active.forEach(function(_,i){
+          var t1=state.target1[i], t2=state.target2[i];
+          if(t1!=null && t1!=='' && incoming1[t1]) incoming1[t1].push(i);
+          if(t2!=null && t2!=='' && incoming2[t2]) incoming2[t2].push(i);
+        });
+        active.forEach(function(m,t){
+          html += '<div class="city-card">';
+          html += '<div class="city-title-row"><span class="city-title-name">'+escapeHtml(displayName(m.name))+'の都市</span>'+metaBadgesHtml(m)+'</div>';
+          var w1 = incoming1[t].length !== 1;
+          var w2 = incoming2[t].length !== 1;
+          if(state.isAdmin){
+            html += '<div class="city-in"><span class="tag tag-ice">1軍</span>' + cityTargetFieldHtml(active, t, 1) + '</div>';
+            html += '<div class="city-in"><span class="tag tag-amber">2軍</span>' + cityTargetFieldHtml(active, t, 2) + '</div>';
+          } else {
+            html += '<div class="city-in'+(w1?' warn':'')+'"><span class="tag tag-ice">1軍</span><div class="city-in-names">' + (incoming1[t].length ? incoming1[t].map(function(s){return '<span class="in-name">'+escapeHtml(displayName(active[s].name))+metaBadgesHtml(active[s])+'</span>';}).join('') : '<span class="in-name">なし</span>') + '</div></div>';
+            html += '<div class="city-in'+(w2?' warn':'')+'"><span class="tag tag-amber">2軍</span><div class="city-in-names">' + (incoming2[t].length ? incoming2[t].map(function(s){return '<span class="in-name">'+escapeHtml(displayName(active[s].name))+metaBadgesHtml(active[s])+'</span>';}).join('') : '<span class="in-name">なし</span>') + '</div></div>';
+          }
+          html += '</div>';
+        });
+      } else {
+        active.forEach(function(m,i){
+          html += '<div class="sender-row">';
+          html += '<div class="sender-head"><span class="rank-badge">'+(i+1)+'</span><span class="name">'+escapeHtml(displayName(m.name))+'</span>'+metaBadgesHtml(m)+'<button class="copy-mini" data-action="copy-individual" data-idx="'+i+'">個別コピー</button></div>';
+          if(state.isAdmin){
+            html += '<div class="target-selects">';
+            html += '<label>1軍 の送り先' + targetFieldHtml(active,i,1) + '</label>';
+            html += '<label>2軍 の送り先' + targetFieldHtml(active,i,2) + '</label>';
+            html += '</div>';
+          } else {
+            var t1v = state.target1[i], t2v = state.target2[i];
+            html += '<div class="readonly-target"><span class="tag tag-ice">1軍</span><span class="arrow">→</span>' + (t1v!=null && t1v!=='' ? escapeHtml(displayName(active[t1v].name))+metaBadgesHtml(active[t1v]) : '未設定') + '</div>';
+            html += '<div class="readonly-target"><span class="tag tag-amber">2軍</span><span class="arrow">→</span>' + (t2v!=null && t2v!=='' ? escapeHtml(displayName(active[t2v].name))+metaBadgesHtml(active[t2v]) : '未設定') + '</div>';
+          }
+          html += '</div>';
+        });
+      }
+      html += '</section>';
+
+      if(state.isAdmin){
+        html += '<section class="panel">';
+        html += '<button class="btn btn-primary btn-block" data-action="auto-match">🔄 再マッチングする(固定は維持)</button>';
+        html += '<p class="note">📌固定した組み合わせはそのまま、残りだけ組み直します</p>';
+        html += '</section>';
+      }
+
+      html += '<section class="panel">';
+      html += '<h2 class="panel-title">お知らせ文面 <span class="hint">1軍/2軍を分けてコピーできます</span></h2>';
+      if(state.isAdmin){
+        html += '<label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">1軍の見出し</label>';
+        html += '<input type="text" id="label1-input" value="'+escapeHtml(state.label1)+'" maxlength="40" style="margin-bottom:10px;" />';
+      }
+      html += '<div class="announce-box">'+escapeHtml(buildArmyText(1))+'</div>';
+      html += '<button class="btn btn-ice btn-block" data-action="copy-army1" style="margin-bottom:16px;">1軍だけコピー</button>';
+      if(state.isAdmin){
+        html += '<label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">2軍の見出し</label>';
+        html += '<input type="text" id="label2-input" value="'+escapeHtml(state.label2)+'" maxlength="40" style="margin-bottom:10px;" />';
+      }
+      html += '<div class="announce-box">'+escapeHtml(buildArmyText(2))+'</div>';
+      html += '<button class="btn btn-ice btn-block" data-action="copy-army2">2軍だけコピー</button>';
+      html += '</section>';
+
+      html += '<section class="panel">';
+      html += '<h2 class="panel-title">援軍不要都市の周知 <span class="hint">マッチング相手以外の援軍を防ぐため</span></h2>';
+      html += '<div class="announce-box">'+escapeHtml(buildNoReinforcementText())+'</div>';
+      html += '<button class="btn btn-ice btn-block" data-action="copy-noreinforcement">この文面をコピー</button>';
+      html += '</section>';
+    }
+
+    return html;
+  }
+
+  function renderManageTab(){
+    var total = state.members.length;
+    var html = '';
+
+    html += '<section class="panel">';
+    html += '<h2 class="panel-title">メンバー名簿 <span class="hint">一度登録すれば次回以降も使えます</span></h2>';
+    if(state.isAdmin){
+      html += '<form class="add-row-wrap" id="add-member-form">';
+      html += '<input type="text" id="member-input" placeholder="名前を入力(フルネーム)" maxlength="40" autocomplete="off" />';
+      html += '<div class="add-meta-row">';
+      html += '<input type="text" id="add-power-input" class="meta-select power-input" placeholder="総力(任意)" maxlength="20" />';
+      html += '<select id="add-fctype-input" class="meta-select">' +
+        '<option value="crystal">火晶</option>' +
+        '<option value="furnace">Lv(大溶鉱炉)</option>' +
+        '</select>';
+      html += '<input type="number" id="add-fclevel-input" class="meta-select power-input" placeholder="レベル" min="1" max="99" />';
+      html += '<label class="meta-check"><input type="checkbox" id="add-shield-input"/> 盾残り</label>';
+      html += '<label class="meta-check"><input type="checkbox" id="add-online-input" checked/> オンライン</label>';
+      html += '</div>';
+      html += '<button type="submit" class="btn btn-ice btn-block">名簿に追加</button>';
+      html += '</form>';
+    } else {
+      html += '<p class="mode-note">閲覧モードです。名簿の編集は管理者のみ行えます。</p>';
+    }
+    if(total){
+      html += '<div class="view-toggle" style="margin-bottom:8px;">' +
+        '<button class="'+(state.rosterSort==='default'?'active':'')+'" data-action="set-roster-sort" data-sort="default">名簿順</button>' +
+        '<button class="'+(state.rosterSort==='combined'?'active':'')+'" data-action="set-roster-sort" data-sort="combined">レベル+総力順</button>' +
+        '</div>';
+      html += '<p class="note" style="margin:0 0 8px;">登録 '+total+'人</p>';
+      html += '<ul class="member-list">';
+      var order = state.members.map(function(m,i){ return { m:m, origIndex:i }; });
+      if(state.rosterSort === 'combined'){
+        order.sort(function(a,b){
+          var d = levelScore(b.m) - levelScore(a.m);
+          return d !== 0 ? d : parsePowerValue(b.m.power) - parsePowerValue(a.m.power);
+        });
+      }
+      order.forEach(function(pair){
+        var m = pair.m, i = pair.origIndex;
+        html += '<li class="member-row'+(m.participating===false?' member-row-off':'')+'">';
+        html += '<div class="member-top">';
+        if(state.isAdmin){
+          html += '<input type="checkbox" class="participate-check" data-action="toggle-participating" data-idx="'+i+'" '+(m.participating!==false?'checked':'')+' aria-label="援軍マッチングに追加" />';
+        } else if(m.participating!==false){
+          html += '<span class="participate-dot" aria-hidden="true" title="今回参加中">✅</span>';
+        }
+        html +=
+          '<span class="rank-badge">'+(i+1)+'</span>' +
+          '<span class="member-name">'+escapeHtml(m.name)+'</span>';
+        if(state.isAdmin){
+          html += '<span class="row-actions">' +
+            '<button data-action="up" data-idx="'+i+'" '+(i===0||state.rosterSort!=='default'?'disabled':'')+' aria-label="上へ">▲</button>' +
+            '<button data-action="down" data-idx="'+i+'" '+(i===total-1||state.rosterSort!=='default'?'disabled':'')+' aria-label="下へ">▼</button>' +
+            '<button data-action="remove" data-idx="'+i+'" aria-label="削除">✕</button>' +
+          '</span>';
+        }
+        html += '</div>';
+        if(state.isAdmin){
+          html += '<div class="member-meta">';
+          html += '<input type="text" class="meta-select power-input" data-action="set-power" data-idx="'+i+'" value="'+escapeHtml(m.power||'')+'" placeholder="総力" maxlength="20" />';
+          html += fcTypeSelectHtml('set-fctype', i, m.fcType);
+          html += '<input type="number" class="meta-select power-input" data-action="set-fclevel" data-idx="'+i+'" value="'+(m.fcLevel!=null?m.fcLevel:'')+'" placeholder="レベル" min="1" max="99" />';
+          html += '<label class="meta-check '+(m.shield?'checked':'')+'"><input type="checkbox" data-action="set-shield" data-idx="'+i+'" '+(m.shield?'checked':'')+'/> 盾残り</label>';
+          html += '<button type="button" class="online-toggle '+(m.online?'online':'offline')+'" data-action="toggle-online" data-idx="'+i+'">'+(m.online?'🟢 オンライン':'⚪ オフライン')+'</button>';
+          html += '</div>';
+        } else {
+          html += '<div class="member-meta">';
+          if(m.power) html += '<span class="meta-badge">総力'+escapeHtml(m.power)+'</span>';
+          if(m.fcLevel != null) html += '<span class="meta-badge">'+fcLabel(m)+'</span>';
+          if(m.shield) html += '<span class="meta-badge">盾残り</span>';
+          html += '<span class="meta-badge '+(m.online?'online':'offline')+'">'+(m.online?'🟢 オンライン':'⚪ オフライン')+'</span>';
+          html += '</div>';
+        }
+        html += '</li>';
+      });
+      html += '</ul>';
+      if(state.rosterSort !== 'default') html += '<p class="note">並び替え中は▲▼での順位変更はできません(「名簿順」に戻すと使えます)</p>';
+      if(state.isAdmin) html += '<button class="link-btn" data-action="clear-members">名簿を全て削除</button>';
+    } else {
+      html += '<p class="empty-state">メンバーが未登録です</p>';
+    }
+    html += '</section>';
+
+    if(state.isAdmin){
+      html += '<section class="panel">';
+      html += '<h2 class="panel-title">一括貼り付けで登録・更新</h2>';
+      html += '<p class="note" style="margin:0 0 10px;text-align:left;">1行に1人ずつ、<code>名前,総力,レベル</code>の形式で貼り付けてください(総力・レベルは省略可、名前だけでもOK)。レベルは大溶鉱炉なら<code>Lv29</code>、火晶なら<code>火晶7</code>のように入力(数字だけの場合は火晶として扱います)。既に名簿にある名前は、総力・レベルだけ上書き更新されます。</p>';
+      html += '<textarea id="bulk-input" rows="5" placeholder="やん坊,1200万,7\nスピ,980万,6\nおみそ"></textarea>';
+      html += '<button class="btn btn-ice btn-block" data-action="bulk-add" style="margin-top:8px;">この内容で登録・更新</button>';
+      html += '</section>';
+    }
+
+    return html;
+  }
+
+  function targetFieldHtml(active, i, cat){
+    var targetArr = cat === 1 ? state.target1 : state.target2;
+    var pinnedMap = cat === 1 ? state.pinned1 : state.pinned2;
+    var isPinned = Object.prototype.hasOwnProperty.call(pinnedMap, i);
+    var selClass = cat === 1 ? 'sel-ice' : 'sel-amber';
+    var html = '<div class="pin-row">';
+    html += '<select class="'+selClass+'" data-action="set-target'+cat+'" data-idx="'+i+'" '+(isPinned?'disabled':'')+'>' + buildTargetOptions(active, i, targetArr[i]) + '</select>';
+    html += '<button class="pin-btn '+(isPinned?'pinned':'')+'" data-action="toggle-pin'+cat+'" data-idx="'+i+'" aria-label="固定する">📌</button>';
+    html += '</div>';
+    return html;
+  }
+
+  function fcLabel(m){
+    if(m.fcLevel == null) return '';
+    return (m.fcType === 'furnace' ? 'Lv' : '火晶') + m.fcLevel;
+  }
+
+  function levelScore(m){
+    if(m.fcLevel == null) return -1;
+    return m.fcType === 'furnace' ? m.fcLevel : 1000 + m.fcLevel;
+  }
+
+  function parsePowerValue(str){
+    if(!str) return -1;
+    var s = String(str).trim();
+    var m;
+    if((m = s.match(/^([\d.]+)\s*億/))) return parseFloat(m[1]) * 100000000;
+    if((m = s.match(/^([\d.]+)\s*万/))) return parseFloat(m[1]) * 10000;
+    if((m = s.match(/^([\d.]+)\s*[MmＭ]/))) return parseFloat(m[1]) * 1000000;
+    if((m = s.match(/^([\d.]+)\s*[KkＫ]/))) return parseFloat(m[1]) * 1000;
+    var cleaned = s.replace(/,/g,'');
+    var num = parseFloat(cleaned);
+    return isNaN(num) ? -1 : num;
+  }
+
+  function metaBadgesHtml(m){
+    var parts = [];
+    if(m.power) parts.push('<span class="mini-badge">⚔'+escapeHtml(m.power)+'</span>');
+    if(m.fcLevel != null) parts.push('<span class="mini-badge">🔥'+fcLabel(m)+'</span>');
+    if(m.shield) parts.push('<span class="mini-badge">🛡盾</span>');
+    parts.push('<span class="mini-badge '+(m.online?'online':'offline')+'">'+(m.online?'🟢':'⚪')+'</span>');
+    return '<span class="mini-badges">'+parts.join('')+'</span>';
+  }
+
+  function fcTypeSelectHtml(dataAction, idx, selectedType){
+    var type = selectedType || 'crystal';
+    return '<select class="meta-select" data-action="'+dataAction+'" data-idx="'+idx+'">' +
+      '<option value="crystal" '+(type==='crystal'?'selected':'')+'>火晶</option>' +
+      '<option value="furnace" '+(type==='furnace'?'selected':'')+'>Lv(大溶鉱炉)</option>' +
+      '</select>';
+  }
+
+  function buildTargetOptions(active, selfIdx, selected){
+    var opts = '<option value="">未設定</option>';
+    active.forEach(function(m,i){
+      if(i === selfIdx) return;
+      opts += '<option value="'+i+'" '+(String(selected)===String(i)?'selected':'')+'>'+escapeHtml(displayName(m.name))+'</option>';
+    });
+    return opts;
+  }
+
+  function cityTargetFieldHtml(active, targetIdx, cat){
+    var targetArr = cat === 1 ? state.target1 : state.target2;
+    var pinnedMap = cat === 1 ? state.pinned1 : state.pinned2;
+    var currentSender = null;
+    for(var s=0; s<targetArr.length; s++){ if(targetArr[s] === targetIdx){ currentSender = s; break; } }
+    var isPinned = currentSender != null && Object.prototype.hasOwnProperty.call(pinnedMap, currentSender) && pinnedMap[currentSender] === targetIdx;
+    var selClass = cat === 1 ? 'sel-ice' : 'sel-amber';
+    var opts = '<option value="">未設定</option>';
+    active.forEach(function(m,i){
+      if(i === targetIdx) return;
+      opts += '<option value="'+i+'" '+(currentSender===i?'selected':'')+'>'+escapeHtml(displayName(m.name))+'</option>';
+    });
+    var html = '<div class="pin-row">';
+    html += '<select class="'+selClass+'" data-action="set-city-target'+cat+'" data-target="'+targetIdx+'" '+(isPinned?'disabled':'')+'>' + opts + '</select>';
+    html += '<button class="pin-btn '+(isPinned?'pinned':'')+'" data-action="toggle-city-pin'+cat+'" data-target="'+targetIdx+'" aria-label="固定する">📌</button>';
+    html += '</div>';
+    return html;
+  }
+
+  function renderNoticeTab(){
+    var html = '';
+    html += '<section class="panel">';
+    html += '<div class="category-pills">';
+    state.noticeCategories.forEach(function(c){
+      html += '<button class="pill '+(c.id===state.activeCategory?'pill-active':'')+'" data-action="set-category" data-id="'+c.id+'">'+escapeHtml(c.name)+'</button>';
+    });
+    if(state.isAdmin){
+      html += '<button class="pill pill-add" data-action="add-category">＋ タブ追加</button>';
+      html += '<button class="pill" data-action="open-manage-categories">⚙ タブを編集</button>';
+    }
+    html += '</div>';
+    html += '</section>';
+
+    var cat = findCategory(state.activeCategory);
+    html += '<section class="panel">';
+    if(cat){
+      html += '<h2 class="panel-title">'+escapeHtml(cat.name)+' <span class="hint">タップでコピー</span>';
+      if(state.isAdmin) html += '<button class="link-btn" style="margin-left:auto;" data-action="delete-category" data-id="'+cat.id+'">タブ削除</button>';
+      html += '</h2>';
+      if(cat.templates.length){
+        cat.templates.forEach(function(t){
+          html += '<div class="notice-card">';
+          html += '<div class="notice-head"><h3>'+escapeHtml(t.title)+'</h3>';
+          if(state.isAdmin){
+            html += '<div class="notice-actions">' +
+              '<button data-action="edit-notice" data-id="'+t.id+'" aria-label="編集">✎</button>' +
+              '<button data-action="delete-notice" data-id="'+t.id+'" aria-label="削除">✕</button>' +
+              '</div>';
+          }
+          html += '</div>';
+          html += '<pre class="notice-body" data-action="copy-notice" data-id="'+t.id+'">'+escapeHtml(t.body)+'</pre>';
+          html += '<button class="btn btn-ice btn-block" data-action="copy-notice" data-id="'+t.id+'">コピーする</button>';
+          html += '</div>';
+        });
+      } else {
+        html += '<p class="empty-state">まだ定型文がありません</p>';
+      }
+      if(state.isAdmin) html += '<button class="btn btn-outline btn-block" data-action="add-notice">＋ 定型文を追加</button>';
+    } else {
+      html += '<p class="empty-state">タブがありません</p>';
+    }
+    html += '</section>';
+    return html;
+  }
+
+  function openModal(cfg){
+    state.modal = cfg;
+    render();
+    setTimeout(function(){
+      var f = document.querySelector('.modal input, .modal textarea');
+      if(f) f.focus();
+    }, 30);
+  }
+  function closeModal(){ state.modal = null; render(); }
+
+  function renderModal(){
+    var el = document.getElementById('modal-root');
+    if(!state.modal){
+      el.className = 'modal-root';
+      el.innerHTML = '';
+      return;
+    }
+    el.className = 'modal-root show';
+    var m = state.modal;
+    var inner = '';
+    if(m.type === 'confirm'){
+      inner = '<div class="modal"><p>'+escapeHtml(m.title||'')+'</p>' +
+        '<div class="modal-actions"><button class="btn btn-outline" data-action="modal-cancel">キャンセル</button>' +
+        '<button class="btn btn-danger-fill" data-action="modal-confirm">削除する</button></div></div>';
+    } else if(m.type === 'add-category'){
+      inner = '<div class="modal"><h3>新しいタブを追加</h3>' +
+        '<input type="text" id="modal-input-name" placeholder="タブ名(例: リクルート募集)" maxlength="15" />' +
+        '<div class="modal-actions"><button class="btn btn-outline" data-action="modal-cancel">キャンセル</button>' +
+        '<button class="btn btn-ice" data-action="modal-confirm">追加</button></div></div>';
+    } else if(m.type === 'add-notice' || m.type === 'edit-notice'){
+      var title='', body='';
+      if(m.type === 'edit-notice'){
+        var t = findNotice(m.id);
+        if(t){ title = t.title; body = t.body; }
+      }
+      inner = '<div class="modal"><h3>'+(m.type==='add-notice' ? '定型文を追加' : '定型文を編集')+'</h3>' +
+        '<input type="text" id="modal-input-title" placeholder="タイトル" maxlength="30" value="'+escapeHtml(title)+'" />' +
+        '<textarea id="modal-input-body" placeholder="本文を入力">'+escapeHtml(body)+'</textarea>' +
+        '<div class="modal-actions"><button class="btn btn-outline" data-action="modal-cancel">キャンセル</button>' +
+        '<button class="btn btn-ice" data-action="modal-confirm">保存</button></div></div>';
+    } else if(m.type === 'admin-login'){
+      inner = '<div class="modal"><h3>管理者ログイン</h3>' +
+        (m.error ? '<p class="modal-error">'+escapeHtml(m.error)+'</p>' : '<p style="color:var(--muted);font-size:12.5px;margin-bottom:10px;">初期PINは 0000 です</p>') +
+        '<input type="password" inputmode="numeric" id="modal-input-pin" placeholder="PINコード" maxlength="8" />' +
+        '<div class="modal-actions"><button class="btn btn-outline" data-action="modal-cancel">キャンセル</button>' +
+        '<button class="btn btn-ice" data-action="modal-confirm">ログイン</button></div></div>';
+    } else if(m.type === 'manage-categories'){
+      inner = '<div class="modal"><h3>タブを編集</h3>';
+      inner += '<p class="note" style="text-align:left;margin:-4px 0 10px;">⠿を押さえたまま上下にスライドすると並び替えできます</p>';
+      inner += '<div class="cat-edit-list">';
+      state.noticeCategories.forEach(function(c){
+        inner += '<div class="cat-edit-row" data-cat-id="'+c.id+'">' +
+          '<span class="drag-handle" aria-hidden="true">⠿</span>' +
+          '<input type="text" data-action="rename-category" data-catid="'+c.id+'" value="'+escapeHtml(c.name)+'" maxlength="15" />' +
+          '</div>';
+      });
+      inner += '</div>';
+      inner += '<div class="modal-actions"><button class="btn btn-ice" data-action="modal-cancel">閉じる</button></div></div>';
+    } else if(m.type === 'admin-menu'){
+      inner = '<div class="modal"><h3>管理者モード</h3>' +
+        '<p style="color:var(--muted);">現在、編集操作ができる状態です。</p>' +
+        '<div class="modal-actions">' +
+        '<button class="btn btn-outline" data-action="modal-cancel">閉じる</button>' +
+        '<button class="btn btn-outline" data-action="admin-open-change-pin">PINを変更</button>' +
+        '<button class="btn btn-danger-fill" data-action="admin-lock">ロックする</button>' +
+        '</div></div>';
+    } else if(m.type === 'admin-change-pin'){
+      inner = '<div class="modal"><h3>PINを変更</h3>' +
+        (m.error ? '<p class="modal-error">'+escapeHtml(m.error)+'</p>' : '') +
+        '<input type="password" inputmode="numeric" id="modal-input-newpin" placeholder="新しいPIN(4桁以上)" maxlength="8" />' +
+        '<div class="modal-actions"><button class="btn btn-outline" data-action="modal-cancel">キャンセル</button>' +
+        '<button class="btn btn-ice" data-action="modal-confirm">変更する</button></div></div>';
+    }
+    el.innerHTML = '<div class="modal-backdrop" data-action="modal-cancel"></div>' + inner;
+    if(m.type === 'manage-categories') attachCategoryDragHandlers();
+  }
+
+  function attachCategoryDragHandlers(){
+    var list = document.querySelector('.cat-edit-list');
+    if(!list) return;
+    var handles = list.querySelectorAll('.drag-handle');
+    handles.forEach(function(handle){
+      handle.onpointerdown = function(e){
+        e.preventDefault();
+        var row = handle.closest('.cat-edit-row');
+        if(!row) return;
+        var startY = e.clientY;
+        row.classList.add('dragging');
+        row.style.position = 'relative';
+        row.style.zIndex = '5';
+        try{ handle.setPointerCapture(e.pointerId); }catch(err){}
+
+        function onMove(ev){
+          var deltaY = ev.clientY - startY;
+          row.style.transform = 'translateY('+deltaY+'px)';
+          var rowRect = row.getBoundingClientRect();
+          var rowMid = rowRect.top + rowRect.height/2;
+          var siblings = Array.prototype.slice.call(list.children).filter(function(r){ return r !== row; });
+          for(var i=0;i<siblings.length;i++){
+            var sib = siblings[i];
+            var sibRect = sib.getBoundingClientRect();
+            var sibMid = sibRect.top + sibRect.height/2;
+            var sibFollows = !!(row.compareDocumentPosition(sib) & Node.DOCUMENT_POSITION_FOLLOWING);
+            if(sibFollows && rowMid > sibMid){
+              var beforeRect = row.getBoundingClientRect();
+              list.insertBefore(row, sib.nextSibling);
+              row.style.transform = 'none';
+              var afterRect = row.getBoundingClientRect();
+              var newDelta = beforeRect.top - afterRect.top;
+              row.style.transform = 'translateY('+newDelta+'px)';
+              startY = ev.clientY - newDelta;
+              break;
+            } else if(!sibFollows && rowMid < sibMid){
+              var beforeRect2 = row.getBoundingClientRect();
+              list.insertBefore(row, sib);
+              row.style.transform = 'none';
+              var afterRect2 = row.getBoundingClientRect();
+              var newDelta2 = beforeRect2.top - afterRect2.top;
+              row.style.transform = 'translateY('+newDelta2+'px)';
+              startY = ev.clientY - newDelta2;
+              break;
+            }
+          }
+        }
+
+        function onUp(){
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          document.removeEventListener('pointercancel', onUp);
+          row.classList.remove('dragging');
+          row.style.transform = '';
+          row.style.position = '';
+          row.style.zIndex = '';
+          var newOrderIds = Array.prototype.slice.call(list.children).map(function(r){ return r.dataset.catId; });
+          var newCategories = newOrderIds.map(function(id){
+            return state.noticeCategories.find(function(c){ return c.id === id; });
+          }).filter(Boolean);
+          if(newCategories.length === state.noticeCategories.length){
+            state.noticeCategories = newCategories;
+            saveNotices();
+          }
+          render();
+        }
+
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
+        document.addEventListener('pointercancel', onUp);
+      };
+    });
+  }
+
+  function handleModalConfirm(){
+    var m = state.modal;
+    if(!m) return;
+    if(m.type === 'confirm'){
+      if(m.onConfirm) m.onConfirm();
+      closeModal();
+      return;
+    }
+    if(m.type === 'add-category'){
+      if(!state.isAdmin){ closeModal(); return; }
+      var nameEl = document.getElementById('modal-input-name');
+      var name = nameEl ? nameEl.value.trim() : '';
+      if(!name) return;
+      var id = genId('cat');
+      state.noticeCategories.push({ id:id, name:name, templates:[] });
+      state.activeCategory = id;
+      saveNotices(); closeModal();
+      return;
+    }
+    if(m.type === 'add-notice'){
+      if(!state.isAdmin){ closeModal(); return; }
+      var titleEl = document.getElementById('modal-input-title');
+      var bodyEl = document.getElementById('modal-input-body');
+      var title = titleEl && titleEl.value.trim() ? titleEl.value.trim() : '無題';
+      var body = bodyEl ? bodyEl.value.trim() : '';
+      var cat = findCategory(state.activeCategory);
+      if(cat){ cat.templates.push({ id: genId('tpl'), title:title, body:body }); saveNotices(); }
+      closeModal();
+      return;
+    }
+    if(m.type === 'edit-notice'){
+      if(!state.isAdmin){ closeModal(); return; }
+      var titleEl2 = document.getElementById('modal-input-title');
+      var bodyEl2 = document.getElementById('modal-input-body');
+      var t = findNotice(m.id);
+      if(t){
+        t.title = titleEl2 && titleEl2.value.trim() ? titleEl2.value.trim() : '無題';
+        t.body = bodyEl2 ? bodyEl2.value.trim() : '';
+        saveNotices();
+      }
+      closeModal();
+      return;
+    }
+    if(m.type === 'admin-login'){
+      var pinEl = document.getElementById('modal-input-pin');
+      var val = pinEl ? pinEl.value : '';
+      if(val === state.adminPin){
+        state.isAdmin = true;
+        closeModal();
+        showToast('管理者モードになりました');
+      } else {
+        state.modal = { type:'admin-login', error:'PINが違います' };
+        render();
+        setTimeout(function(){ var f=document.getElementById('modal-input-pin'); if(f) f.focus(); }, 30);
+      }
+      return;
+    }
+    if(m.type === 'admin-change-pin'){
+      var newPinEl = document.getElementById('modal-input-newpin');
+      var newPin = newPinEl ? newPinEl.value.trim() : '';
+      if(newPin.length < 4){
+        state.modal = { type:'admin-change-pin', error:'4桁以上で入力してください' };
+        render();
+        setTimeout(function(){ var f=document.getElementById('modal-input-newpin'); if(f) f.focus(); }, 30);
+        return;
+      }
+      state.adminPin = newPin;
+      saveAdminPin();
+      closeModal();
+      showToast('PINを変更しました');
+      return;
+    }
+  }
+
+  function renderAdminSlot(){
+    var el = document.getElementById('admin-slot');
+    if(state.isAdmin){
+      el.innerHTML = '<button class="admin-btn admin-on" data-action="admin-toggle">🔓 管理者中</button>';
+    } else {
+      el.innerHTML = '<button class="admin-btn" data-action="admin-toggle">🔒 管理者</button>';
+    }
+  }
+
+  function render(){
+    if(!state.loaded){
+      document.getElementById('content').innerHTML = '<p class="empty-state">読み込み中…</p>';
+      return;
+    }
+    var contentHtml;
+    if(state.tab === 'match') contentHtml = renderMatchTab();
+    else if(state.tab === 'manage') contentHtml = renderManageTab();
+    else contentHtml = renderNoticeTab();
+    document.getElementById('content').innerHTML = (state.firebaseError ? '<p class="mode-note" style="color:var(--danger);text-align:center;">⚠ データベースに接続できませんでした。この端末だけの一時的な表示になっています(保存されません)。ページを再読み込みしてみてください。</p>' : '') + contentHtml;
+    document.getElementById('tab-match').classList.toggle('tab-active', state.tab === 'match');
+    document.getElementById('tab-notice').classList.toggle('tab-active', state.tab === 'notice');
+    document.getElementById('tab-manage').classList.toggle('tab-active', state.tab === 'manage');
+    renderAdminSlot();
+    renderModal();
+    if(state.tab === 'match'){
+      var searchEl = document.getElementById('participant-search-input');
+      if(searchEl && document.activeElement !== searchEl && state.participantSearchFocus){
+        searchEl.focus();
+        var v = searchEl.value;
+        searchEl.value = '';
+        searchEl.value = v;
+        state.participantSearchFocus = false;
+      }
+    }
+  }
+
+  document.addEventListener('input', function(e){
+    if(e.target && e.target.id === 'participant-search-input'){
+      state.participantSearchQuery = e.target.value;
+      state.participantSearchFocus = true;
+      render();
+    }
+  });
+
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-action]');
+    if(!btn) return;
+    var action = btn.dataset.action;
+    var idxAttr = btn.dataset.idx;
+    var idx = idxAttr !== undefined ? parseInt(idxAttr,10) : null;
+
+    switch(action){
+      case 'set-tab': state.tab = btn.dataset.tab; render(); break;
+      case 'up': moveMember(idx,-1); break;
+      case 'down': moveMember(idx,1); break;
+      case 'remove': removeMember(idx); break;
+      case 'set-roster-sort': state.rosterSort = btn.dataset.sort; render(); break;
+      case 'clear-members':
+        if(!state.isAdmin) break;
+        openModal({ type:'confirm', title:'メンバーを全員削除しますか?', onConfirm:function(){
+          state.members=[]; resetAssignments(); saveMatching(); render();
+        }});
+        break;
+      case 'auto-match': autoMatch(); break;
+      case 'bulk-add': runBulkAdd(); break;
+      case 'toggle-pin1': togglePin(1, idx); break;
+      case 'toggle-pin2': togglePin(2, idx); break;
+      case 'toggle-city-pin1': togglePinFromCity(1, parseInt(btn.dataset.target,10)); break;
+      case 'toggle-city-pin2': togglePinFromCity(2, parseInt(btn.dataset.target,10)); break;
+      case 'copy-army1': copyText(buildArmyText(1)); break;
+      case 'copy-army2': copyText(buildArmyText(2)); break;
+      case 'copy-noreinforcement': copyText(buildNoReinforcementText()); break;
+      case 'add-participant':
+        if(!state.isAdmin) break;
+        if(state.members[idx]){
+          state.members[idx].participating = true;
+          resetAssignments();
+          saveMatching();
+          state.participantSearchQuery = '';
+          render();
+        }
+        break;
+      case 'remove-participant':
+        if(!state.isAdmin) break;
+        if(state.members[idx]){
+          state.members[idx].participating = false;
+          resetAssignments();
+          saveMatching();
+          render();
+        }
+        break;
+      case 'copy-individual': copyText(buildIndividualText(idx)); break;
+      case 'toggle-view': state.matchView = btn.dataset.view; render(); break;
+      case 'set-category': state.activeCategory = btn.dataset.id; render(); break;
+      case 'add-category':
+        if(!state.isAdmin) break;
+        openModal({ type:'add-category' });
+        break;
+      case 'open-manage-categories':
+        if(!state.isAdmin) break;
+        openModal({ type:'manage-categories' });
+        break;
+      case 'delete-category':
+        if(!state.isAdmin) break;
+        var cid = btn.dataset.id;
+        openModal({ type:'confirm', title:'このタブを削除しますか?中の定型文も削除されます', onConfirm:function(){ deleteCategory(cid); }});
+        break;
+      case 'copy-notice':
+        var tn = findNotice(btn.dataset.id);
+        if(tn) copyText(tn.body);
+        break;
+      case 'edit-notice':
+        if(!state.isAdmin) break;
+        openModal({ type:'edit-notice', id: btn.dataset.id });
+        break;
+      case 'delete-notice':
+        if(!state.isAdmin) break;
+        var nid = btn.dataset.id;
+        openModal({ type:'confirm', title:'この定型文を削除しますか?', onConfirm:function(){ deleteNotice(nid); }});
+        break;
+      case 'add-notice':
+        if(!state.isAdmin) break;
+        openModal({ type:'add-notice' });
+        break;
+      case 'admin-toggle':
+        if(state.isAdmin) openModal({ type:'admin-menu' });
+        else openModal({ type:'admin-login' });
+        break;
+      case 'admin-lock':
+        state.isAdmin = false;
+        closeModal();
+        showToast('ロックしました');
+        break;
+      case 'admin-open-change-pin':
+        openModal({ type:'admin-change-pin' });
+        break;
+      case 'toggle-online':
+        if(!state.isAdmin) break;
+        if(state.members[idx]){ state.members[idx].online = !state.members[idx].online; saveMatching(); render(); }
+        break;
+      case 'modal-cancel': closeModal(); break;
+      case 'modal-confirm': handleModalConfirm(); break;
+    }
+  });
+
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.id === 'label1-input'){
+      if(!state.isAdmin) return;
+      state.label1 = e.target.value.trim() || '①1軍';
+      saveMatching(); render();
+      return;
+    }
+    if(e.target && e.target.id === 'label2-input'){
+      if(!state.isAdmin) return;
+      state.label2 = e.target.value.trim() || '②2軍';
+      saveMatching(); render();
+      return;
+    }
+    var renameCatInput = e.target.closest('input[data-action="rename-category"]');
+    if(renameCatInput){
+      if(!state.isAdmin) return;
+      var newName = renameCatInput.value.trim();
+      var catToRename = findCategory(renameCatInput.dataset.catid);
+      if(catToRename && newName){
+        catToRename.name = newName;
+        saveNotices(); render();
+      }
+      return;
+    }
+    var powerInput = e.target.closest('input[data-action="set-power"]');
+    if(powerInput){
+      if(!state.isAdmin) return;
+      var pidx = parseInt(powerInput.dataset.idx,10);
+      if(state.members[pidx]) state.members[pidx].power = powerInput.value.trim();
+      saveMatching(); render();
+      return;
+    }
+    var fclevelInput = e.target.closest('input[data-action="set-fclevel"]');
+    if(fclevelInput){
+      if(!state.isAdmin) return;
+      var lidx = parseInt(fclevelInput.dataset.idx,10);
+      if(state.members[lidx]) state.members[lidx].fcLevel = fclevelInput.value === '' ? null : parseInt(fclevelInput.value,10);
+      saveMatching(); render();
+      return;
+    }
+    var toggleAll = e.target.closest('input[data-action="toggle-participate-all"]');
+    if(toggleAll){
+      if(!state.isAdmin) return;
+      var newVal = toggleAll.checked;
+      state.members.forEach(function(m){ m.participating = newVal; });
+      resetAssignments();
+      saveMatching(); render();
+      return;
+    }
+    var chk = e.target.closest('input[type="checkbox"][data-action]');
+    if(chk){
+      if(!state.isAdmin) return;
+      var cidx = parseInt(chk.dataset.idx,10);
+      if(!state.members[cidx]) return;
+      if(chk.dataset.action === 'set-shield') state.members[cidx].shield = chk.checked;
+      else if(chk.dataset.action === 'toggle-participating'){
+        state.members[cidx].participating = chk.checked;
+        resetAssignments();
+      }
+      saveMatching(); render();
+      return;
+    }
+    var sel = e.target.closest('select[data-action]');
+    if(!sel) return;
+    if(!state.isAdmin) return;
+    if(sel.dataset.action === 'set-fctype'){
+      var fidx = parseInt(sel.dataset.idx,10);
+      if(state.members[fidx]) state.members[fidx].fcType = sel.value || 'crystal';
+      saveMatching(); render();
+      return;
+    }
+    if(sel.dataset.action === 'set-city-target1' || sel.dataset.action === 'set-city-target2'){
+      var cat = sel.dataset.action === 'set-city-target1' ? 1 : 2;
+      var targetArr = cat === 1 ? state.target1 : state.target2;
+      var targetIdx = parseInt(sel.dataset.target,10);
+      var newVal = sel.value === '' ? null : parseInt(sel.value,10);
+      for(var s2=0; s2<targetArr.length; s2++){
+        if(targetArr[s2] === targetIdx && s2 !== newVal) targetArr[s2] = null;
+      }
+      if(newVal != null) targetArr[newVal] = targetIdx;
+      saveMatching(); render();
+      return;
+    }
+    var idx = parseInt(sel.dataset.idx,10);
+    var val = sel.value === '' ? null : parseInt(sel.value,10);
+    if(sel.dataset.action === 'set-target1') state.target1[idx] = val;
+    else if(sel.dataset.action === 'set-target2') state.target2[idx] = val;
+    saveMatching(); render();
+  });
+
+  document.addEventListener('submit', function(e){
+    if(e.target && e.target.id === 'add-member-form'){
+      e.preventDefault();
+      if(!state.isAdmin) return;
+      var input = document.getElementById('member-input');
+      var val = input.value.trim();
+      if(val){
+        var powerEl = document.getElementById('add-power-input');
+        var fctypeEl = document.getElementById('add-fctype-input');
+        var fclevelEl = document.getElementById('add-fclevel-input');
+        var shieldEl = document.getElementById('add-shield-input');
+        var onlineEl = document.getElementById('add-online-input');
+        state.members.push({
+          name: val,
+          fcLevel: fclevelEl && fclevelEl.value !== '' ? parseInt(fclevelEl.value,10) : null,
+          fcType: fctypeEl ? fctypeEl.value : 'crystal',
+          power: powerEl ? powerEl.value.trim() : '',
+          shield: !!(shieldEl && shieldEl.checked),
+          online: onlineEl ? !!onlineEl.checked : true,
+          participating: false
+        });
+        saveMatching();
+        render();
+        setTimeout(function(){
+          var i2 = document.getElementById('member-input');
+          if(i2) i2.focus();
+        }, 30);
+      }
+    }
+  });
+
+  initFirebaseSync();
+})();
+</script>
+</body>
+</html>
