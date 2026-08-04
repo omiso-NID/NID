@@ -414,7 +414,7 @@
       midwayTypes: { shield:false, spear:false, bow:false },
       midwayShield: null, midwaySpear: null, midwayBow: null,
       midwaySimpleTotal: null,
-      maxCount: null, maxPerMember: null,
+      maxPerMember: null,
       maxRatioShield: null, maxRatioSpear: null, maxRatioBow: null,
       maxMemberNames: [],
       plannedCount: null,
@@ -466,7 +466,7 @@
       midwayTypes: { shield:false, spear:false, bow:false },
       midwayShield: null, midwaySpear: null, midwayBow: null,
       midwaySimpleTotal: null,
-      maxCount: null, maxPerMember: null,
+      maxPerMember: null,
       maxRatioShield: null, maxRatioSpear: null, maxRatioBow: null,
       maxMemberNames: [],
       plannedCount: null,
@@ -559,7 +559,6 @@
             midwaySpear: g.midwaySpear != null ? g.midwaySpear : null,
             midwayBow: g.midwayBow != null ? g.midwayBow : null,
             midwaySimpleTotal: g.midwaySimpleTotal != null ? g.midwaySimpleTotal : null,
-            maxCount: g.maxCount != null ? g.maxCount : null,
             maxPerMember: g.maxPerMember != null ? g.maxPerMember : null,
             maxRatioShield: g.maxRatioShield != null ? g.maxRatioShield : null,
             maxRatioSpear: g.maxRatioSpear != null ? g.maxRatioSpear : null,
@@ -846,16 +845,21 @@
     return round1(g.capacity / g.midwayCount);
   }
 
+  function garrisonMaxCount(){
+    return state.garrison.maxMemberNames.length;
+  }
+
   function garrisonMaxTotal(){
     var g = state.garrison;
-    if(g.maxCount == null || g.maxPerMember == null) return null;
-    return g.maxCount * g.maxPerMember;
+    var count = garrisonMaxCount();
+    if(!count || g.maxPerMember == null) return null;
+    return count * g.maxPerMember;
   }
 
   function garrisonRemainingCount(){
     var g = state.garrison;
-    if(g.maxCount == null || g.plannedCount == null) return null;
-    return Math.max(0, g.plannedCount - g.maxCount);
+    if(g.plannedCount == null) return null;
+    return Math.max(0, g.plannedCount - garrisonMaxCount());
   }
 
   function garrisonRemainingCapacity(){
@@ -1213,7 +1217,7 @@
       html += '<label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">駐屯合計予定人数</label>';
       html += '<input type="number" data-action="set-g-planned-count" value="'+(g.plannedCount!=null?g.plannedCount:'')+'" placeholder="例: 15" style="margin-bottom:10px;" />';
       html += '<div class="add-meta-row" style="margin-bottom:8px;">';
-      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>人数</label><input type="number" data-action="set-g-max-count" value="'+(g.maxCount!=null?g.maxCount:'')+'" /><span class="unit">人</span></div>';
+      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>人数</label><span class="note" style="margin:0;">'+garrisonMaxCount()+'人(下で選択した人数)</span></div>';
       html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>1人</label><input type="number" data-action="set-g-max-per-member" value="'+(g.maxPerMember!=null?g.maxPerMember:'')+'" /><span class="unit">万</span></div>';
       html += '</div>';
       html += '<label style="font-size:11px;color:var(--muted);display:block;margin:8px 0 4px;">MAXメンバーの盾槍弓割合(%)</label>';
@@ -1978,7 +1982,6 @@
           g.midwayTypes[gType] = gInput.checked;
           break;
         case 'set-g-planned-count': g.plannedCount = gNum; break;
-        case 'set-g-max-count': g.maxCount = gNum; break;
         case 'set-g-max-per-member': g.maxPerMember = gNum; break;
         case 'set-g-max-ratio-shield': g.maxRatioShield = gNum; break;
         case 'set-g-max-ratio-spear': g.maxRatioSpear = gNum; break;
