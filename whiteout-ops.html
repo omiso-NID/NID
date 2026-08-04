@@ -70,12 +70,14 @@
     position:sticky;top:0;z-index:20;
     background:linear-gradient(180deg, var(--bg) 70%, transparent);
     padding-top:6px;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
   }
+  .tabs::-webkit-scrollbar{display:none;}
   .tab-btn{
-    flex:1;padding:11px 8px;border-radius:11px;border:1px solid var(--border);
-    background:var(--bg-elev);color:var(--muted);font-weight:600;font-size:13.5px;
+    flex:1 0 auto;padding:11px 12px;border-radius:11px;border:1px solid var(--border);
+    background:var(--bg-elev);color:var(--muted);font-weight:600;font-size:13px;
     letter-spacing:0.01em;cursor:pointer;transition:background .15s,color .15s,border-color .15s;
-    min-height:44px;
+    min-height:44px;white-space:nowrap;
   }
   .tab-btn.tab-active{
     background:linear-gradient(155deg, rgba(79,209,232,0.16), rgba(79,209,232,0.04));
@@ -104,7 +106,7 @@
   .mode-note{font-size:11.5px;color:var(--muted);margin:-4px 0 12px;}
 
   .add-row{display:flex;gap:8px;margin-bottom:12px;}
-  input[type="text"], input[type="password"], textarea{
+  input[type="text"], input[type="password"], input[type="number"], textarea{
     background:var(--bg-elev2);border:1px solid var(--border);color:var(--text);
     border-radius:10px;padding:11px 12px;font-size:14.5px;width:100%;
     font-family:inherit;
@@ -155,6 +157,14 @@
 
   .add-row-wrap{margin-bottom:12px;}
   .add-meta-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;}
+  .g-field{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+  .g-field label{flex:none;width:28px;font-size:13px;color:var(--muted);}
+  .g-field input{flex:1;min-width:0;margin-bottom:0;}
+  .g-field .unit{flex:none;font-size:12px;color:var(--muted);}
+  .g-pair-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+  .g-pair-label{flex:none;width:18px;font-size:13.5px;color:var(--text);font-weight:600;}
+  .g-pair-row input{flex:1;min-width:0;margin-bottom:0;}
+  .g-pair-row .unit{flex:none;font-size:11.5px;color:var(--muted);}
   .member-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding-left:2px;}
   .meta-select{
     width:auto;flex:none;padding:6px 7px;font-size:11.5px;border-radius:7px;
@@ -232,8 +242,10 @@
     width:34px;height:34px;font-size:14px;color:var(--muted);cursor:pointer;
   }
   .pin-btn.pinned{background:rgba(242,166,90,0.18);border-color:var(--amber);color:var(--amber);}
-  .readonly-target{font-size:13.5px;padding:8px 0;color:var(--text);}
-  .readonly-target .arrow{color:var(--muted);margin:0 4px;}
+  .readonly-target{font-size:13.5px;padding:8px 0;color:var(--text);display:flex;align-items:center;gap:4px;}
+  .readonly-target .arrow{color:var(--muted);margin:0 4px;flex:none;}
+  .rt-body{display:flex;flex:1;min-width:0;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;}
+  .rt-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex-shrink:1;}
 
   .city-card{
     border-top:1px solid var(--border);padding:12px 0;
@@ -244,8 +256,9 @@
   .city-title-name{font-weight:600;font-size:14.5px;}
   .city-in{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;margin-top:6px;color:var(--text);}
   .city-in-names{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;}
-  .in-name{display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
-  .mini-badges{display:inline-flex;gap:3px;margin-left:5px;flex-wrap:wrap;}
+  .in-name{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;width:100%;}
+  .in-name-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex-shrink:1;}
+  .mini-badges{display:inline-flex;gap:3px;margin-left:5px;flex-wrap:wrap;flex:none;}
   .mini-badge{
     font-size:10px;padding:1px 5px;border-radius:5px;background:var(--bg);
     border:1px solid var(--border);color:var(--muted);white-space:nowrap;line-height:1.6;
@@ -362,6 +375,7 @@
   </div>
   <nav class="tabs">
     <button class="tab-btn" id="tab-match" data-action="set-tab" data-tab="match">援軍マッチング</button>
+    <button class="tab-btn" id="tab-garrison" data-action="set-tab" data-tab="garrison">本部駐屯</button>
     <button class="tab-btn" id="tab-notice" data-action="set-tab" data-tab="notice">お知らせ配信</button>
     <button class="tab-btn" id="tab-manage" data-action="set-tab" data-tab="manage">管理</button>
   </nav>
@@ -392,7 +406,20 @@
     participantSearchQuery: '',
     noticeCategories: [],
     activeCategory: null,
-    modal: null
+    modal: null,
+    garrison: {
+      capacity: null,
+      midwayCount: null,
+      midwaySimple: false,
+      midwayTypes: { shield:false, spear:false, bow:false },
+      midwayShield: null, midwaySpear: null, midwayBow: null,
+      midwaySimpleTotal: null,
+      maxCount: null, maxPerMember: null,
+      maxRatioShield: null, maxRatioSpear: null, maxRatioBow: null,
+      maxMemberNames: [],
+      restShield: null, restSpear: null, restBow: null
+    },
+    garrisonSearchQuery: ''
   };
 
   var toastTimer = null;
@@ -428,7 +455,22 @@
   function genId(prefix){ return prefix + '_' + Date.now() + '_' + Math.floor(Math.random()*1000); }
 
   var db = null;
-  var matchingLoaded = false, noticesLoaded = false, pinLoaded = false;
+  var matchingLoaded = false, noticesLoaded = false, pinLoaded = false, garrisonLoaded = false;
+
+  function defaultGarrison(){
+    return {
+      capacity: null,
+      midwayCount: null,
+      midwaySimple: false,
+      midwayTypes: { shield:false, spear:false, bow:false },
+      midwayShield: null, midwaySpear: null, midwayBow: null,
+      midwaySimpleTotal: null,
+      maxCount: null, maxPerMember: null,
+      maxRatioShield: null, maxRatioSpear: null, maxRatioBow: null,
+      maxMemberNames: [],
+      restShield: null, restSpear: null, restBow: null
+    };
+  }
 
   function normalizeMember(x){
     if(typeof x === 'string') return { name:x, fcLevel:null, fcType:'crystal', power:'', shield:false, online:true, participating:true };
@@ -438,7 +480,7 @@
   }
 
   function checkAllLoaded(){
-    if(matchingLoaded && noticesLoaded && pinLoaded) state.loaded = true;
+    if(matchingLoaded && noticesLoaded && pinLoaded && garrisonLoaded) state.loaded = true;
     render();
   }
 
@@ -501,6 +543,37 @@
         checkAllLoaded();
       }, function(){ pinLoaded = true; checkAllLoaded(); });
 
+      db.ref('wos-garrison').on('value', function(snap){
+        try{
+          var raw = snap.val();
+          var g = raw ? JSON.parse(raw) : {};
+          var d = defaultGarrison();
+          state.garrison = {
+            capacity: g.capacity != null ? g.capacity : d.capacity,
+            midwayCount: g.midwayCount != null ? g.midwayCount : d.midwayCount,
+            midwaySimple: !!g.midwaySimple,
+            midwayTypes: g.midwayTypes || d.midwayTypes,
+            midwayShield: g.midwayShield != null ? g.midwayShield : null,
+            midwaySpear: g.midwaySpear != null ? g.midwaySpear : null,
+            midwayBow: g.midwayBow != null ? g.midwayBow : null,
+            midwaySimpleTotal: g.midwaySimpleTotal != null ? g.midwaySimpleTotal : null,
+            maxCount: g.maxCount != null ? g.maxCount : null,
+            maxPerMember: g.maxPerMember != null ? g.maxPerMember : null,
+            maxRatioShield: g.maxRatioShield != null ? g.maxRatioShield : null,
+            maxRatioSpear: g.maxRatioSpear != null ? g.maxRatioSpear : null,
+            maxRatioBow: g.maxRatioBow != null ? g.maxRatioBow : null,
+            maxMemberNames: g.maxMemberNames || [],
+            restShield: g.restShield != null ? g.restShield : null,
+            restSpear: g.restSpear != null ? g.restSpear : null,
+            restBow: g.restBow != null ? g.restBow : null
+          };
+        }catch(e){
+          state.garrison = defaultGarrison();
+        }
+        garrisonLoaded = true;
+        checkAllLoaded();
+      }, function(){ garrisonLoaded = true; checkAllLoaded(); });
+
     }catch(e){
       state.noticeCategories = defaultNoticeCategories();
       state.activeCategory = state.noticeCategories[0].id;
@@ -530,6 +603,12 @@
     if(!db) return;
     try{
       db.ref('wos-admin-pin').set(state.adminPin).catch(function(){});
+    }catch(e){}
+  }
+  function saveGarrison(){
+    if(!db) return;
+    try{
+      db.ref('wos-garrison').set(JSON.stringify(state.garrison)).catch(function(){});
     }catch(e){}
   }
 
@@ -755,6 +834,70 @@
     return lines.join('\n');
   }
 
+  function round1(n){ return Math.round(n * 10) / 10; }
+  function round0(n){ return Math.round(n); }
+
+  function garrisonMidwayPerMemberRef(){
+    var g = state.garrison;
+    if(g.capacity == null || !g.midwayCount) return null;
+    return round1(g.capacity / g.midwayCount);
+  }
+
+  function garrisonMaxTotal(){
+    var g = state.garrison;
+    if(g.maxCount == null || g.maxPerMember == null) return null;
+    return g.maxCount * g.maxPerMember;
+  }
+
+  function garrisonRemainingCount(){
+    var g = state.garrison;
+    if(g.maxCount == null) return null;
+    return Math.max(0, 15 - g.maxCount);
+  }
+
+  function garrisonRemainingCapacity(){
+    var g = state.garrison;
+    var maxTotal = garrisonMaxTotal();
+    if(g.capacity == null || maxTotal == null) return null;
+    return g.capacity - maxTotal;
+  }
+
+  function garrisonRemainingPerMember(){
+    var remCap = garrisonRemainingCapacity();
+    var remCount = garrisonRemainingCount();
+    if(remCap == null || !remCount) return null;
+    return round1(remCap / remCount);
+  }
+
+  function buildMidwayText(){
+    var g = state.garrison;
+    if(g.midwaySimple){
+      var typesLabel = ['shield','spear','bow'].filter(function(t){ return g.midwayTypes[t]; })
+        .map(function(t){ return t==='shield' ? '盾' : t==='spear' ? '槍' : '弓'; }).join('');
+      return '【途中本部】' + typesLabel + '　' + (g.midwaySimpleTotal || 0) + '万';
+    }
+    var parts = [];
+    if(g.midwayShield) parts.push('盾' + g.midwayShield + '万');
+    if(g.midwaySpear) parts.push('槍' + g.midwaySpear + '万');
+    if(g.midwayBow) parts.push('弓' + g.midwayBow + '万');
+    var total = (g.midwayShield||0) + (g.midwaySpear||0) + (g.midwayBow||0);
+    return '【途中本部】' + parts.join('、') + '  計' + total + '万';
+  }
+
+  function buildFinalMaxText(){
+    var g = state.garrison;
+    var lines = ['【最後本部 MAX指定メンバー】'];
+    g.maxMemberNames.forEach(function(n){ lines.push('・' + displayName(n)); });
+    lines.push('兵士割合：盾' + (g.maxRatioShield||0) + '槍' + (g.maxRatioSpear||0) + '弓' + (g.maxRatioBow||0));
+    lines.push('で入ってください🙇\u200d♂️');
+    return lines.join('\n');
+  }
+
+  function buildFinalRestText(){
+    var g = state.garrison;
+    return '【最後本部】盾' + (g.restShield||0) + '万、槍' + (g.restSpear||0) + '万、弓' + (g.restBow||0) + '万';
+  }
+
   function copyText(text){
     function ok(){ showToast('コピーしました'); }
     function fallback(){
@@ -955,8 +1098,8 @@
             html += '<div class="city-in"><span class="tag tag-ice">1軍</span>' + cityTargetFieldHtml(active, t, 1) + '</div>';
             html += '<div class="city-in"><span class="tag tag-amber">2軍</span>' + cityTargetFieldHtml(active, t, 2) + '</div>';
           } else {
-            html += '<div class="city-in'+(w1?' warn':'')+'"><span class="tag tag-ice">1軍</span><div class="city-in-names">' + (incoming1[t].length ? incoming1[t].map(function(s){return '<span class="in-name">'+escapeHtml(displayName(active[s].name))+metaBadgesHtml(active[s])+'</span>';}).join('') : '<span class="in-name">なし</span>') + '</div></div>';
-            html += '<div class="city-in'+(w2?' warn':'')+'"><span class="tag tag-amber">2軍</span><div class="city-in-names">' + (incoming2[t].length ? incoming2[t].map(function(s){return '<span class="in-name">'+escapeHtml(displayName(active[s].name))+metaBadgesHtml(active[s])+'</span>';}).join('') : '<span class="in-name">なし</span>') + '</div></div>';
+            html += '<div class="city-in'+(w1?' warn':'')+'"><span class="tag tag-ice">1軍</span><div class="city-in-names">' + (incoming1[t].length ? incoming1[t].map(function(s){return '<span class="in-name"><span class="in-name-text">'+escapeHtml(displayName(active[s].name))+'</span>'+metaBadgesHtml(active[s])+'</span>';}).join('') : '<span class="in-name">なし</span>') + '</div></div>';
+            html += '<div class="city-in'+(w2?' warn':'')+'"><span class="tag tag-amber">2軍</span><div class="city-in-names">' + (incoming2[t].length ? incoming2[t].map(function(s){return '<span class="in-name"><span class="in-name-text">'+escapeHtml(displayName(active[s].name))+'</span>'+metaBadgesHtml(active[s])+'</span>';}).join('') : '<span class="in-name">なし</span>') + '</div></div>';
           }
           html += '</div>';
         });
@@ -971,8 +1114,8 @@
             html += '</div>';
           } else {
             var t1v = state.target1[i], t2v = state.target2[i];
-            html += '<div class="readonly-target"><span class="tag tag-ice">1軍</span><span class="arrow">→</span>' + (t1v!=null && t1v!=='' ? escapeHtml(displayName(active[t1v].name))+metaBadgesHtml(active[t1v]) : '未設定') + '</div>';
-            html += '<div class="readonly-target"><span class="tag tag-amber">2軍</span><span class="arrow">→</span>' + (t2v!=null && t2v!=='' ? escapeHtml(displayName(active[t2v].name))+metaBadgesHtml(active[t2v]) : '未設定') + '</div>';
+            html += '<div class="readonly-target"><span class="tag tag-ice">1軍</span><span class="arrow">→</span>' + (t1v!=null && t1v!=='' ? '<span class="rt-body"><span class="rt-name">'+escapeHtml(displayName(active[t1v].name))+'</span>'+metaBadgesHtml(active[t1v])+'</span>' : '未設定') + '</div>';
+            html += '<div class="readonly-target"><span class="tag tag-amber">2軍</span><span class="arrow">→</span>' + (t2v!=null && t2v!=='' ? '<span class="rt-body"><span class="rt-name">'+escapeHtml(displayName(active[t2v].name))+'</span>'+metaBadgesHtml(active[t2v])+'</span>' : '未設定') + '</div>';
           }
           html += '</div>';
         });
@@ -1008,6 +1151,143 @@
       html += '<button class="btn btn-ice btn-block" data-action="copy-noreinforcement">この文面をコピー</button>';
       html += '</section>';
     }
+
+    return html;
+  }
+
+  function renderGarrisonTab(){
+    var g = state.garrison;
+    var html = '';
+
+    // ---- capacity ----
+    html += '<section class="panel">';
+    html += '<h2 class="panel-title">隊長の容量 <span class="hint">単位:万</span></h2>';
+    if(state.isAdmin){
+      html += '<input type="number" data-action="set-g-capacity" value="'+(g.capacity!=null?g.capacity:'')+'" placeholder="例: 150" />';
+    } else {
+      html += '<p class="note">'+(g.capacity!=null ? g.capacity+'万' : '未設定')+'</p>';
+    }
+    html += '<p class="note">駐屯メンバーはMAX15人までです</p>';
+    html += '</section>';
+
+    // ---- 途中本部 ----
+    html += '<section class="panel">';
+    html += '<h2 class="panel-title">本部「途中」 <span class="hint">Lv10</span></h2>';
+    if(state.isAdmin){
+      html += '<label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">駐屯メンバー人数</label>';
+      html += '<input type="number" data-action="set-g-midway-count" value="'+(g.midwayCount!=null?g.midwayCount:'')+'" placeholder="例: 15" style="margin-bottom:8px;" />';
+      var midRef = garrisonMidwayPerMemberRef();
+      if(midRef != null) html += '<p class="note" style="margin:0 0 12px;">1人あたり目安: '+midRef.toFixed(1)+'万</p>';
+
+      html += '<div class="view-toggle" style="margin-bottom:10px;">';
+      html += '<button class="'+(!g.midwaySimple?'active':'')+'" data-action="set-g-midway-mode" data-mode="detail">盾槍弓を個別入力</button>';
+      html += '<button class="'+(g.midwaySimple?'active':'')+'" data-action="set-g-midway-mode" data-mode="simple">兵種✅＋合計おまかせ</button>';
+      html += '</div>';
+
+      if(g.midwaySimple){
+        html += '<div class="add-meta-row" style="margin-bottom:8px;">';
+        html += '<label class="meta-check '+(g.midwayTypes.shield?'checked':'')+'"><input type="checkbox" data-action="toggle-g-midway-type" data-type="shield" '+(g.midwayTypes.shield?'checked':'')+'/> 盾</label>';
+        html += '<label class="meta-check '+(g.midwayTypes.spear?'checked':'')+'"><input type="checkbox" data-action="toggle-g-midway-type" data-type="spear" '+(g.midwayTypes.spear?'checked':'')+'/> 槍</label>';
+        html += '<label class="meta-check '+(g.midwayTypes.bow?'checked':'')+'"><input type="checkbox" data-action="toggle-g-midway-type" data-type="bow" '+(g.midwayTypes.bow?'checked':'')+'/> 弓</label>';
+        html += '</div>';
+        html += '<div class="g-field"><label>合計</label><input type="number" data-action="set-g-midway-simple-total" value="'+(g.midwaySimpleTotal!=null?g.midwaySimpleTotal:'')+'" /><span class="unit">万</span></div>';
+      } else {
+        html += '<div class="g-field"><label>盾</label><input type="number" data-action="set-g-midway-shield" value="'+(g.midwayShield!=null?g.midwayShield:'')+'" /><span class="unit">万</span></div>';
+        html += '<div class="g-field"><label>槍</label><input type="number" data-action="set-g-midway-spear" value="'+(g.midwaySpear!=null?g.midwaySpear:'')+'" /><span class="unit">万</span></div>';
+        html += '<div class="g-field"><label>弓</label><input type="number" data-action="set-g-midway-bow" value="'+(g.midwayBow!=null?g.midwayBow:'')+'" /><span class="unit">万</span></div>';
+        var midTotal = (g.midwayShield||0)+(g.midwaySpear||0)+(g.midwayBow||0);
+        html += '<p class="note" style="margin:0;">合計 '+midTotal+'万</p>';
+      }
+    }
+    html += '<div class="announce-box" style="margin-top:12px;">'+escapeHtml(buildMidwayText())+'</div>';
+    html += '<button class="btn btn-ice btn-block" data-action="copy-g-midway">この文面をコピー</button>';
+    html += '</section>';
+
+    // ---- 最後本部 A ----
+    html += '<section class="panel">';
+    html += '<h2 class="panel-title">本部「最後」 <span class="hint">Lv20・MAXメンバー</span></h2>';
+    if(state.isAdmin){
+      html += '<div class="add-meta-row" style="margin-bottom:8px;">';
+      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>人数</label><input type="number" data-action="set-g-max-count" value="'+(g.maxCount!=null?g.maxCount:'')+'" /><span class="unit">人</span></div>';
+      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>1人</label><input type="number" data-action="set-g-max-per-member" value="'+(g.maxPerMember!=null?g.maxPerMember:'')+'" /><span class="unit">万</span></div>';
+      html += '</div>';
+      html += '<label style="font-size:11px;color:var(--muted);display:block;margin:8px 0 4px;">MAXメンバーの盾槍弓割合(%)</label>';
+      html += '<div class="add-meta-row" style="margin-bottom:10px;">';
+      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>盾</label><input type="number" data-action="set-g-max-ratio-shield" value="'+(g.maxRatioShield!=null?g.maxRatioShield:'')+'" /><span class="unit">%</span></div>';
+      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>槍</label><input type="number" data-action="set-g-max-ratio-spear" value="'+(g.maxRatioSpear!=null?g.maxRatioSpear:'')+'" /><span class="unit">%</span></div>';
+      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>弓</label><input type="number" data-action="set-g-max-ratio-bow" value="'+(g.maxRatioBow!=null?g.maxRatioBow:'')+'" /><span class="unit">%</span></div>';
+      html += '</div>';
+
+      html += '<label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">MAXメンバーを名簿から追加</label>';
+      html += '<input type="text" id="garrison-search-input" placeholder="名前で検索して追加" autocomplete="off" value="'+escapeHtml(state.garrisonSearchQuery||'')+'" />';
+      var gQuery = (state.garrisonSearchQuery||'').trim();
+      if(gQuery){
+        var gSuggestions = state.members.filter(function(m){
+          return g.maxMemberNames.indexOf(m.name) === -1 && m.name.indexOf(gQuery) !== -1;
+        }).slice(0,8);
+        if(gSuggestions.length){
+          html += '<ul class="suggest-list">';
+          gSuggestions.forEach(function(m){
+            html += '<li><button type="button" class="suggest-item" data-action="add-g-max-member" data-name="'+escapeHtml(m.name)+'">'+escapeHtml(m.name)+metaBadgesHtml(m)+'</button></li>';
+          });
+          html += '</ul>';
+        } else {
+          html += '<p class="note">候補が見つかりません</p>';
+        }
+      }
+    }
+    if(g.maxMemberNames.length){
+      html += '<ul class="member-list" style="margin-top:10px;">';
+      g.maxMemberNames.forEach(function(n){
+        html += '<li class="member-row"><div class="member-top"><span class="member-name">'+escapeHtml(n)+'</span>';
+        if(state.isAdmin) html += '<span class="row-actions"><button data-action="remove-g-max-member" data-name="'+escapeHtml(n)+'" aria-label="削除">✕</button></span>';
+        html += '</div></li>';
+      });
+      html += '</ul>';
+    } else if(state.isAdmin){
+      html += '<p class="note">まだMAXメンバーが選択されていません</p>';
+    }
+    html += '</section>';
+
+    // ---- 最後本部 B(計算結果) ----
+    var maxTotal = garrisonMaxTotal();
+    var remCount = garrisonRemainingCount();
+    var remCap = garrisonRemainingCapacity();
+    var remPer = garrisonRemainingPerMember();
+    html += '<section class="panel">';
+    html += '<h2 class="panel-title">計算結果</h2>';
+    html += '<p class="note" style="margin:0 0 4px;">MAX合計: '+(maxTotal!=null?maxTotal+'万':'―')+'</p>';
+    html += '<p class="note" style="margin:0 0 4px;">残り人数: '+(remCount!=null?remCount+'人':'―')+'</p>';
+    html += '<p class="note" style="margin:0;">残り1人あたり目安: '+(remPer!=null?remPer.toFixed(1)+'万':'―')+'</p>';
+    html += '</section>';
+
+    // ---- 最後本部 C(残りメンバー構成) ----
+    html += '<section class="panel">';
+    html += '<h2 class="panel-title">残りメンバーの構成 <span class="hint">万・%どちらからでも入力可</span></h2>';
+    if(state.isAdmin){
+      var baseCap = remCap != null ? remCap : 0;
+      function pct(v){ return baseCap ? round0((v||0)/baseCap*100) : 0; }
+      html += '<div class="g-pair-row"><span class="g-pair-label">盾</span>' +
+        '<input type="number" data-action="set-g-rest-shield" value="'+(g.restShield!=null?g.restShield:'')+'" /><span class="unit">万</span>' +
+        '<input type="number" data-action="set-g-rest-shield-pct" value="'+(g.restShield!=null?pct(g.restShield):'')+'" /><span class="unit">%</span></div>';
+      html += '<div class="g-pair-row"><span class="g-pair-label">槍</span>' +
+        '<input type="number" data-action="set-g-rest-spear" value="'+(g.restSpear!=null?g.restSpear:'')+'" /><span class="unit">万</span>' +
+        '<input type="number" data-action="set-g-rest-spear-pct" value="'+(g.restSpear!=null?pct(g.restSpear):'')+'" /><span class="unit">%</span></div>';
+      html += '<div class="g-pair-row"><span class="g-pair-label">弓</span>' +
+        '<input type="number" data-action="set-g-rest-bow" value="'+(g.restBow!=null?g.restBow:'')+'" /><span class="unit">万</span>' +
+        '<input type="number" data-action="set-g-rest-bow-pct" value="'+(g.restBow!=null?pct(g.restBow):'')+'" /><span class="unit">%</span></div>';
+    }
+    html += '</section>';
+
+    html += '<section class="panel">';
+    html += '<h2 class="panel-title">最後本部 お知らせ文面</h2>';
+    html += '<p class="note" style="text-align:left;margin:0 0 6px;">MAX指定メンバー向け</p>';
+    html += '<div class="announce-box">'+escapeHtml(buildFinalMaxText())+'</div>';
+    html += '<button class="btn btn-ice btn-block" data-action="copy-g-final-max" style="margin-bottom:16px;">MAXメンバー向けをコピー</button>';
+    html += '<p class="note" style="text-align:left;margin:0 0 6px;">他メンバー向け</p>';
+    html += '<div class="announce-box">'+escapeHtml(buildFinalRestText())+'</div>';
+    html += '<button class="btn btn-ice btn-block" data-action="copy-g-final-rest">他メンバー向けをコピー</button>';
+    html += '</section>';
 
     return html;
   }
@@ -1475,10 +1755,12 @@
     }
     var contentHtml;
     if(state.tab === 'match') contentHtml = renderMatchTab();
+    else if(state.tab === 'garrison') contentHtml = renderGarrisonTab();
     else if(state.tab === 'manage') contentHtml = renderManageTab();
     else contentHtml = renderNoticeTab();
     document.getElementById('content').innerHTML = (state.firebaseError ? '<p class="mode-note" style="color:var(--danger);text-align:center;">⚠ データベースに接続できませんでした。この端末だけの一時的な表示になっています(保存されません)。ページを再読み込みしてみてください。</p>' : '') + contentHtml;
     document.getElementById('tab-match').classList.toggle('tab-active', state.tab === 'match');
+    document.getElementById('tab-garrison').classList.toggle('tab-active', state.tab === 'garrison');
     document.getElementById('tab-notice').classList.toggle('tab-active', state.tab === 'notice');
     document.getElementById('tab-manage').classList.toggle('tab-active', state.tab === 'manage');
     renderAdminSlot();
@@ -1493,12 +1775,44 @@
         state.participantSearchFocus = false;
       }
     }
+    if(state.tab === 'garrison'){
+      var gSearchEl = document.getElementById('garrison-search-input');
+      if(gSearchEl && document.activeElement !== gSearchEl && state.garrisonSearchFocus){
+        gSearchEl.focus();
+        var gv = gSearchEl.value;
+        gSearchEl.value = '';
+        gSearchEl.value = gv;
+        state.garrisonSearchFocus = false;
+      }
+    }
   }
 
   document.addEventListener('input', function(e){
     if(e.target && e.target.id === 'participant-search-input'){
       state.participantSearchQuery = e.target.value;
+      if(!e.isComposing){
+        state.participantSearchFocus = true;
+        render();
+      }
+    }
+    if(e.target && e.target.id === 'garrison-search-input'){
+      state.garrisonSearchQuery = e.target.value;
+      if(!e.isComposing){
+        state.garrisonSearchFocus = true;
+        render();
+      }
+    }
+  });
+
+  document.addEventListener('compositionend', function(e){
+    if(e.target && e.target.id === 'participant-search-input'){
+      state.participantSearchQuery = e.target.value;
       state.participantSearchFocus = true;
+      render();
+    }
+    if(e.target && e.target.id === 'garrison-search-input'){
+      state.garrisonSearchQuery = e.target.value;
+      state.garrisonSearchFocus = true;
       render();
     }
   });
@@ -1531,6 +1845,29 @@
       case 'copy-army1': copyText(buildArmyText(1)); break;
       case 'copy-army2': copyText(buildArmyText(2)); break;
       case 'copy-noreinforcement': copyText(buildNoReinforcementText()); break;
+      case 'set-g-midway-mode':
+        if(!state.isAdmin) break;
+        state.garrison.midwaySimple = (btn.dataset.mode === 'simple');
+        saveGarrison(); render();
+        break;
+      case 'add-g-max-member':
+        if(!state.isAdmin) break;
+        var gName = btn.dataset.name;
+        if(gName && state.garrison.maxMemberNames.indexOf(gName) === -1){
+          state.garrison.maxMemberNames.push(gName);
+          state.garrisonSearchQuery = '';
+          saveGarrison(); render();
+        }
+        break;
+      case 'remove-g-max-member':
+        if(!state.isAdmin) break;
+        var rmName = btn.dataset.name;
+        state.garrison.maxMemberNames = state.garrison.maxMemberNames.filter(function(n){ return n !== rmName; });
+        saveGarrison(); render();
+        break;
+      case 'copy-g-midway': copyText(buildMidwayText()); break;
+      case 'copy-g-final-max': copyText(buildFinalMaxText()); break;
+      case 'copy-g-final-rest': copyText(buildFinalRestText()); break;
       case 'add-participant':
         if(!state.isAdmin) break;
         if(state.members[idx]){
@@ -1615,6 +1952,39 @@
       if(!state.isAdmin) return;
       state.label2 = e.target.value.trim() || '②2軍';
       saveMatching(); render();
+      return;
+    }
+    var gInput = e.target.closest('[data-action^="set-g-"], [data-action^="toggle-g-"]');
+    if(gInput){
+      if(!state.isAdmin) return;
+      var gAction = gInput.dataset.action;
+      var gNum = gInput.value === '' ? null : parseFloat(gInput.value);
+      var g = state.garrison;
+      var remCapNow = garrisonRemainingCapacity();
+      switch(gAction){
+        case 'set-g-capacity': g.capacity = gNum; break;
+        case 'set-g-midway-count': g.midwayCount = gNum; break;
+        case 'set-g-midway-shield': g.midwayShield = gNum; break;
+        case 'set-g-midway-spear': g.midwaySpear = gNum; break;
+        case 'set-g-midway-bow': g.midwayBow = gNum; break;
+        case 'set-g-midway-simple-total': g.midwaySimpleTotal = gNum; break;
+        case 'toggle-g-midway-type':
+          var gType = gInput.dataset.type;
+          g.midwayTypes[gType] = gInput.checked;
+          break;
+        case 'set-g-max-count': g.maxCount = gNum; break;
+        case 'set-g-max-per-member': g.maxPerMember = gNum; break;
+        case 'set-g-max-ratio-shield': g.maxRatioShield = gNum; break;
+        case 'set-g-max-ratio-spear': g.maxRatioSpear = gNum; break;
+        case 'set-g-max-ratio-bow': g.maxRatioBow = gNum; break;
+        case 'set-g-rest-shield': g.restShield = gNum != null ? round0(gNum) : null; break;
+        case 'set-g-rest-spear': g.restSpear = gNum != null ? round0(gNum) : null; break;
+        case 'set-g-rest-bow': g.restBow = gNum != null ? round0(gNum) : null; break;
+        case 'set-g-rest-shield-pct': g.restShield = (gNum != null && remCapNow) ? round0(remCapNow * gNum / 100) : (gNum==null?null:0); break;
+        case 'set-g-rest-spear-pct': g.restSpear = (gNum != null && remCapNow) ? round0(remCapNow * gNum / 100) : (gNum==null?null:0); break;
+        case 'set-g-rest-bow-pct': g.restBow = (gNum != null && remCapNow) ? round0(remCapNow * gNum / 100) : (gNum==null?null:0); break;
+      }
+      saveGarrison(); render();
       return;
     }
     var renameCatInput = e.target.closest('input[data-action="rename-category"]');
