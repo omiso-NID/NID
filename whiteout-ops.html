@@ -849,6 +849,19 @@
     return state.garrison.maxMemberNames.length;
   }
 
+  function clampGarrisonRatios(justEdited){
+    var g = state.garrison;
+    var s = g.maxRatioShield || 0, sp = g.maxRatioSpear || 0, b = g.maxRatioBow || 0;
+    var sum = s + sp + b;
+    if(sum > 100){
+      var overflow = sum - 100;
+      if(justEdited === 'shield') g.maxRatioShield = Math.max(0, s - overflow);
+      else if(justEdited === 'spear') g.maxRatioSpear = Math.max(0, sp - overflow);
+      else if(justEdited === 'bow') g.maxRatioBow = Math.max(0, b - overflow);
+      showToast('合計が100%を超えるため調整しました');
+    }
+  }
+
   function garrisonMaxTotal(){
     var g = state.garrison;
     var count = garrisonMaxCount();
@@ -1983,9 +1996,9 @@
           break;
         case 'set-g-planned-count': g.plannedCount = gNum; break;
         case 'set-g-max-per-member': g.maxPerMember = gNum; break;
-        case 'set-g-max-ratio-shield': g.maxRatioShield = gNum; break;
-        case 'set-g-max-ratio-spear': g.maxRatioSpear = gNum; break;
-        case 'set-g-max-ratio-bow': g.maxRatioBow = gNum; break;
+        case 'set-g-max-ratio-shield': g.maxRatioShield = gNum; clampGarrisonRatios('shield'); break;
+        case 'set-g-max-ratio-spear': g.maxRatioSpear = gNum; clampGarrisonRatios('spear'); break;
+        case 'set-g-max-ratio-bow': g.maxRatioBow = gNum; clampGarrisonRatios('bow'); break;
         case 'set-g-rest-shield': g.restShield = gNum != null ? round0(gNum) : null; break;
         case 'set-g-rest-spear': g.restSpear = gNum != null ? round0(gNum) : null; break;
         case 'set-g-rest-bow': g.restBow = gNum != null ? round0(gNum) : null; break;
