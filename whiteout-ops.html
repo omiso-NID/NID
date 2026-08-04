@@ -1841,7 +1841,11 @@
     var idx = idxAttr !== undefined ? parseInt(idxAttr,10) : null;
 
     switch(action){
-      case 'set-tab': state.tab = btn.dataset.tab; render(); break;
+      case 'set-tab':
+        state.tab = btn.dataset.tab;
+        render();
+        window.scrollTo(0, 0);
+        break;
       case 'up': moveMember(idx,-1); break;
       case 'down': moveMember(idx,1); break;
       case 'remove': removeMember(idx); break;
