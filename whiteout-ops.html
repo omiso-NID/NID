@@ -1037,7 +1037,10 @@
       if(total === 0){
         html += '<p class="mode-note">名簿にメンバーがいません。「管理」タブでまず名簿に登録してください。</p>';
       } else {
-        html += '<input type="text" id="participant-search-input" placeholder="名前で検索して追加" autocomplete="off" value="'+escapeHtml(state.participantSearchQuery||'')+'" />';
+        html += '<form class="add-row" id="participant-search-form">' +
+          '<input type="text" id="participant-search-input" placeholder="名前で検索して追加" autocomplete="off" value="'+escapeHtml(state.participantSearchQuery||'')+'" />' +
+          '<button type="submit" class="btn btn-ice">検索</button>' +
+          '</form>';
         var query = (state.participantSearchQuery||'').trim();
         if(query){
           var suggestions = state.members
@@ -1259,7 +1262,10 @@
       html += '</div>';
 
       html += '<label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">MAXメンバーを名簿から追加</label>';
-      html += '<input type="text" id="garrison-search-input" placeholder="名前で検索して追加" autocomplete="off" value="'+escapeHtml(state.garrisonSearchQuery||'')+'" />';
+      html += '<form class="add-row" id="garrison-search-form">' +
+        '<input type="text" id="garrison-search-input" placeholder="名前で検索して追加" autocomplete="off" value="'+escapeHtml(state.garrisonSearchQuery||'')+'" />' +
+        '<button type="submit" class="btn btn-ice">検索</button>' +
+        '</form>';
       var gQuery = (state.garrisonSearchQuery||'').trim();
       if(gQuery){
         var gSuggestions = state.members.filter(function(m){
@@ -1827,53 +1833,6 @@
     }
   }
 
-  var participantSearchDebounce = null;
-  var garrisonSearchDebounce = null;
-
-  document.addEventListener('input', function(e){
-    if(e.target && e.target.id === 'participant-search-input'){
-      state.participantSearchQuery = e.target.value;
-      clearTimeout(participantSearchDebounce);
-      if(!e.isComposing){
-        state.participantSearchFocus = true;
-        render();
-      } else {
-        participantSearchDebounce = setTimeout(function(){
-          state.participantSearchFocus = true;
-          render();
-        }, 450);
-      }
-    }
-    if(e.target && e.target.id === 'garrison-search-input'){
-      state.garrisonSearchQuery = e.target.value;
-      clearTimeout(garrisonSearchDebounce);
-      if(!e.isComposing){
-        state.garrisonSearchFocus = true;
-        render();
-      } else {
-        garrisonSearchDebounce = setTimeout(function(){
-          state.garrisonSearchFocus = true;
-          render();
-        }, 450);
-      }
-    }
-  });
-
-  document.addEventListener('compositionend', function(e){
-    if(e.target && e.target.id === 'participant-search-input'){
-      clearTimeout(participantSearchDebounce);
-      state.participantSearchQuery = e.target.value;
-      state.participantSearchFocus = true;
-      render();
-    }
-    if(e.target && e.target.id === 'garrison-search-input'){
-      clearTimeout(garrisonSearchDebounce);
-      state.garrisonSearchQuery = e.target.value;
-      state.garrisonSearchFocus = true;
-      render();
-    }
-  });
-
   document.addEventListener('click', function(e){
     var btn = e.target.closest('[data-action]');
     if(!btn) return;
@@ -2122,6 +2081,22 @@
   });
 
   document.addEventListener('submit', function(e){
+    if(e.target && e.target.id === 'participant-search-form'){
+      e.preventDefault();
+      var pInput = document.getElementById('participant-search-input');
+      state.participantSearchQuery = pInput ? pInput.value : '';
+      state.participantSearchFocus = true;
+      render();
+      return;
+    }
+    if(e.target && e.target.id === 'garrison-search-form'){
+      e.preventDefault();
+      var gInputEl = document.getElementById('garrison-search-input');
+      state.garrisonSearchQuery = gInputEl ? gInputEl.value : '';
+      state.garrisonSearchFocus = true;
+      render();
+      return;
+    }
     if(e.target && e.target.id === 'add-member-form'){
       e.preventDefault();
       if(!state.isAdmin) return;
