@@ -417,6 +417,7 @@
       maxCount: null, maxPerMember: null,
       maxRatioShield: null, maxRatioSpear: null, maxRatioBow: null,
       maxMemberNames: [],
+      plannedCount: null,
       restShield: null, restSpear: null, restBow: null
     },
     garrisonSearchQuery: ''
@@ -468,6 +469,7 @@
       maxCount: null, maxPerMember: null,
       maxRatioShield: null, maxRatioSpear: null, maxRatioBow: null,
       maxMemberNames: [],
+      plannedCount: null,
       restShield: null, restSpear: null, restBow: null
     };
   }
@@ -563,6 +565,7 @@
             maxRatioSpear: g.maxRatioSpear != null ? g.maxRatioSpear : null,
             maxRatioBow: g.maxRatioBow != null ? g.maxRatioBow : null,
             maxMemberNames: g.maxMemberNames || [],
+            plannedCount: g.plannedCount != null ? g.plannedCount : null,
             restShield: g.restShield != null ? g.restShield : null,
             restSpear: g.restSpear != null ? g.restSpear : null,
             restBow: g.restBow != null ? g.restBow : null
@@ -851,8 +854,8 @@
 
   function garrisonRemainingCount(){
     var g = state.garrison;
-    if(g.maxCount == null) return null;
-    return Math.max(0, 15 - g.maxCount);
+    if(g.maxCount == null || g.plannedCount == null) return null;
+    return Math.max(0, g.plannedCount - g.maxCount);
   }
 
   function garrisonRemainingCapacity(){
@@ -1207,6 +1210,8 @@
     html += '<section class="panel">';
     html += '<h2 class="panel-title">本部「最後」 <span class="hint">Lv20・MAXメンバー</span></h2>';
     if(state.isAdmin){
+      html += '<label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">駐屯合計予定人数</label>';
+      html += '<input type="number" data-action="set-g-planned-count" value="'+(g.plannedCount!=null?g.plannedCount:'')+'" placeholder="例: 15" style="margin-bottom:10px;" />';
       html += '<div class="add-meta-row" style="margin-bottom:8px;">';
       html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>人数</label><input type="number" data-action="set-g-max-count" value="'+(g.maxCount!=null?g.maxCount:'')+'" /><span class="unit">人</span></div>';
       html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>1人</label><input type="number" data-action="set-g-max-per-member" value="'+(g.maxPerMember!=null?g.maxPerMember:'')+'" /><span class="unit">万</span></div>';
@@ -1263,10 +1268,10 @@
 
     // ---- 最後本部 C(残りメンバー構成) ----
     html += '<section class="panel">';
-    html += '<h2 class="panel-title">残りメンバーの構成 <span class="hint">万・%どちらからでも入力可</span></h2>';
+    html += '<h2 class="panel-title">残りメンバー1人あたりの構成 <span class="hint">万・%どちらからでも入力可</span></h2>';
     if(state.isAdmin){
-      var baseCap = remCap != null ? remCap : 0;
-      function pct(v){ return baseCap ? round0((v||0)/baseCap*100) : 0; }
+      var basePer = remPer != null ? remPer : 0;
+      function pct(v){ return basePer ? round0((v||0)/basePer*100) : 0; }
       html += '<div class="g-pair-row"><span class="g-pair-label">盾</span>' +
         '<input type="number" data-action="set-g-rest-shield" value="'+(g.restShield!=null?g.restShield:'')+'" /><span class="unit">万</span>' +
         '<input type="number" data-action="set-g-rest-shield-pct" value="'+(g.restShield!=null?pct(g.restShield):'')+'" /><span class="unit">%</span></div>';
@@ -1960,7 +1965,7 @@
       var gAction = gInput.dataset.action;
       var gNum = gInput.value === '' ? null : parseFloat(gInput.value);
       var g = state.garrison;
-      var remCapNow = garrisonRemainingCapacity();
+      var remPerNow = garrisonRemainingPerMember();
       switch(gAction){
         case 'set-g-capacity': g.capacity = gNum; break;
         case 'set-g-midway-count': g.midwayCount = gNum; break;
@@ -1972,6 +1977,7 @@
           var gType = gInput.dataset.type;
           g.midwayTypes[gType] = gInput.checked;
           break;
+        case 'set-g-planned-count': g.plannedCount = gNum; break;
         case 'set-g-max-count': g.maxCount = gNum; break;
         case 'set-g-max-per-member': g.maxPerMember = gNum; break;
         case 'set-g-max-ratio-shield': g.maxRatioShield = gNum; break;
@@ -1980,9 +1986,9 @@
         case 'set-g-rest-shield': g.restShield = gNum != null ? round0(gNum) : null; break;
         case 'set-g-rest-spear': g.restSpear = gNum != null ? round0(gNum) : null; break;
         case 'set-g-rest-bow': g.restBow = gNum != null ? round0(gNum) : null; break;
-        case 'set-g-rest-shield-pct': g.restShield = (gNum != null && remCapNow) ? round0(remCapNow * gNum / 100) : (gNum==null?null:0); break;
-        case 'set-g-rest-spear-pct': g.restSpear = (gNum != null && remCapNow) ? round0(remCapNow * gNum / 100) : (gNum==null?null:0); break;
-        case 'set-g-rest-bow-pct': g.restBow = (gNum != null && remCapNow) ? round0(remCapNow * gNum / 100) : (gNum==null?null:0); break;
+        case 'set-g-rest-shield-pct': g.restShield = (gNum != null && remPerNow) ? round0(remPerNow * gNum / 100) : (gNum==null?null:0); break;
+        case 'set-g-rest-spear-pct': g.restSpear = (gNum != null && remPerNow) ? round0(remPerNow * gNum / 100) : (gNum==null?null:0); break;
+        case 'set-g-rest-bow-pct': g.restBow = (gNum != null && remPerNow) ? round0(remPerNow * gNum / 100) : (gNum==null?null:0); break;
       }
       saveGarrison(); render();
       return;
