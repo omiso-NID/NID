@@ -849,6 +849,21 @@
     return state.garrison.maxMemberNames.length;
   }
 
+  function ratioOptionsHtml(current, otherSum){
+    var maxAllowed = Math.max(0, 100 - otherSum);
+    var opts = '<option value="">未設定</option>';
+    var hasCurrent = false;
+    for(var v=0; v<=maxAllowed; v+=5){
+      var isSel = (current!=null && current===v);
+      if(isSel) hasCurrent = true;
+      opts += '<option value="'+v+'" '+(isSel?'selected':'')+'>'+v+'%</option>';
+    }
+    if(current!=null && !hasCurrent){
+      opts += '<option value="'+current+'" selected>'+current+'%(現在値)</option>';
+    }
+    return opts;
+  }
+
   function clampGarrisonRatios(justEdited){
     var g = state.garrison;
     var s = g.maxRatioShield || 0, sp = g.maxRatioSpear || 0, b = g.maxRatioBow || 0;
@@ -1233,11 +1248,14 @@
       html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>人数</label><span class="note" style="margin:0;">'+garrisonMaxCount()+'人(下で選択した人数)</span></div>';
       html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>1人</label><input type="number" data-action="set-g-max-per-member" value="'+(g.maxPerMember!=null?g.maxPerMember:'')+'" /><span class="unit">万</span></div>';
       html += '</div>';
-      html += '<label style="font-size:11px;color:var(--muted);display:block;margin:8px 0 4px;">MAXメンバーの盾槍弓割合(%)</label>';
+      html += '<label style="font-size:11px;color:var(--muted);display:block;margin:8px 0 4px;">MAXメンバーの盾槍弓割合(%・5刻み)</label>';
       html += '<div class="add-meta-row" style="margin-bottom:10px;">';
-      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>盾</label><input type="number" data-action="set-g-max-ratio-shield" value="'+(g.maxRatioShield!=null?g.maxRatioShield:'')+'" /><span class="unit">%</span></div>';
-      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>槍</label><input type="number" data-action="set-g-max-ratio-spear" value="'+(g.maxRatioSpear!=null?g.maxRatioSpear:'')+'" /><span class="unit">%</span></div>';
-      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>弓</label><input type="number" data-action="set-g-max-ratio-bow" value="'+(g.maxRatioBow!=null?g.maxRatioBow:'')+'" /><span class="unit">%</span></div>';
+      var shieldOther = (g.maxRatioSpear||0) + (g.maxRatioBow||0);
+      var spearOther = (g.maxRatioShield||0) + (g.maxRatioBow||0);
+      var bowOther = (g.maxRatioShield||0) + (g.maxRatioSpear||0);
+      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>盾</label><select class="meta-select" data-action="set-g-max-ratio-shield">' + ratioOptionsHtml(g.maxRatioShield, shieldOther) + '</select><span class="unit">%</span></div>';
+      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>槍</label><select class="meta-select" data-action="set-g-max-ratio-spear">' + ratioOptionsHtml(g.maxRatioSpear, spearOther) + '</select><span class="unit">%</span></div>';
+      html += '<div class="g-field" style="flex:1;margin-bottom:0;"><label>弓</label><select class="meta-select" data-action="set-g-max-ratio-bow">' + ratioOptionsHtml(g.maxRatioBow, bowOther) + '</select><span class="unit">%</span></div>';
       html += '</div>';
 
       html += '<label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">MAXメンバーを名簿から追加</label>';
@@ -1809,30 +1827,47 @@
     }
   }
 
+  var participantSearchDebounce = null;
+  var garrisonSearchDebounce = null;
+
   document.addEventListener('input', function(e){
     if(e.target && e.target.id === 'participant-search-input'){
       state.participantSearchQuery = e.target.value;
+      clearTimeout(participantSearchDebounce);
       if(!e.isComposing){
         state.participantSearchFocus = true;
         render();
+      } else {
+        participantSearchDebounce = setTimeout(function(){
+          state.participantSearchFocus = true;
+          render();
+        }, 450);
       }
     }
     if(e.target && e.target.id === 'garrison-search-input'){
       state.garrisonSearchQuery = e.target.value;
+      clearTimeout(garrisonSearchDebounce);
       if(!e.isComposing){
         state.garrisonSearchFocus = true;
         render();
+      } else {
+        garrisonSearchDebounce = setTimeout(function(){
+          state.garrisonSearchFocus = true;
+          render();
+        }, 450);
       }
     }
   });
 
   document.addEventListener('compositionend', function(e){
     if(e.target && e.target.id === 'participant-search-input'){
+      clearTimeout(participantSearchDebounce);
       state.participantSearchQuery = e.target.value;
       state.participantSearchFocus = true;
       render();
     }
     if(e.target && e.target.id === 'garrison-search-input'){
+      clearTimeout(garrisonSearchDebounce);
       state.garrisonSearchQuery = e.target.value;
       state.garrisonSearchFocus = true;
       render();
