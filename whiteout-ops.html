@@ -475,10 +475,10 @@
   }
 
   function normalizeMember(x){
-    if(typeof x === 'string') return { name:x, fcLevel:null, fcType:'crystal', power:'', shield:false, online:true, participating:true };
+    if(typeof x === 'string') return { name:x, fcLevel:null, fcType:'crystal', power:'', shield:false, online:true, participating:true, displayOverride:'' };
     var fcLevel = x.fcLevel != null ? x.fcLevel : (x.fc != null ? x.fc : null);
     var fcType = x.fcType || 'crystal';
-    return { name:x.name||'', fcLevel: fcLevel, fcType: fcType, power: x.power || '', shield:!!x.shield, online: x.online!==false, participating: x.participating!==false };
+    return { name:x.name||'', fcLevel: fcLevel, fcType: fcType, power: x.power || '', shield:!!x.shield, online: x.online!==false, participating: x.participating!==false, displayOverride: x.displayOverride || '' };
   }
 
   function checkAllLoaded(){
@@ -831,10 +831,12 @@
   }
 
   function displayName(name){
+    var member = state.members.find(function(m){ return m.name === name; });
+    if(member && member.displayOverride) return member.displayOverride;
     var result = name;
     var atMatch = result.match(/^(.*?)[@＠](.+)$/);
     if(atMatch) result = atMatch[2];
-    result = result.replace(/NID$/i, '');
+    result = result.replace(/[\s　]*[NＮ][IＩ][DＤ][\s　]*$/, '');
     return result.trim() || name;
   }
 
@@ -1432,6 +1434,10 @@
           html += '<input type="number" class="meta-select power-input" data-action="set-fclevel" data-idx="'+i+'" value="'+(m.fcLevel!=null?m.fcLevel:'')+'" placeholder="レベル" min="1" max="99" />';
           html += '<label class="meta-check '+(m.shield?'checked':'')+'"><input type="checkbox" data-action="set-shield" data-idx="'+i+'" '+(m.shield?'checked':'')+'/> 盾残り</label>';
           html += '<button type="button" class="online-toggle '+(m.online?'online':'offline')+'" data-action="toggle-online" data-idx="'+i+'">'+(m.online?'🟢 オンライン':'⚪ オフライン')+'</button>';
+          html += '</div>';
+          html += '<div class="member-meta">';
+          html += '<span style="font-size:11px;color:var(--muted);">簡易表示名</span>';
+          html += '<input type="text" class="meta-select" style="flex:1;min-width:120px;" data-action="set-display-override" data-idx="'+i+'" value="'+escapeHtml(m.displayOverride||'')+'" placeholder="自動: '+escapeHtml(displayName(m.name))+'" maxlength="20" />';
           html += '</div>';
         } else {
           html += '<div class="member-meta">';
@@ -2045,6 +2051,14 @@
         catToRename.name = newName;
         saveNotices(); render();
       }
+      return;
+    }
+    var overrideInput = e.target.closest('input[data-action="set-display-override"]');
+    if(overrideInput){
+      if(!state.isAdmin) return;
+      var oIdx = parseInt(overrideInput.dataset.idx,10);
+      if(state.members[oIdx]) state.members[oIdx].displayOverride = overrideInput.value.trim();
+      saveMatching(); render();
       return;
     }
     var powerInput = e.target.closest('input[data-action="set-power"]');
