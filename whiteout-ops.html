@@ -696,7 +696,7 @@
     return arr;
   }
 
-  function solveAssignment(n, pins, avoid){
+  function solveAssignment(n, pins, avoid, prefFn){
     var target = new Array(n).fill(null);
     var used = new Array(n).fill(false);
     var i;
@@ -721,7 +721,16 @@
         if(avoid && avoid[idx]===j) continue;
         candidates.push(j);
       }
-      shuffleArr(candidates);
+      if(prefFn){
+        // 強さのルールに沿った候補を優先しつつ、毎回同じ結果にならないよう軽い揺らぎを加える
+        var jitter = Math.max(1, n * 0.25);
+        candidates = candidates.map(function(j){
+          return { j:j, score: prefFn(idx, j) + Math.random()*jitter };
+        }).sort(function(a,b){ return a.score - b.score; })
+          .map(function(o){ return o.j; });
+      } else {
+        shuffleArr(candidates);
+      }
       for(var k=0;k<candidates.length;k++){
         var j2 = candidates[k];
         target[idx]=j2; used[j2]=true;
@@ -757,8 +766,27 @@
     var active = activeMembers();
     var n = active.length;
     if(n < 3) return;
-    var t1 = solveAssignment(n, state.pinned1, null);
-    var t2 = solveAssignment(n, state.pinned2, t1);
+
+    // 名簿の並び順 = 強さ順(0が最強)。マッチングのコツに沿って候補を優先する。
+    // ルール2: 弱い都市に強い人の1軍を入れる
+    var pref1 = function(sender, city){
+      return Math.abs(city - (n - 1 - sender));
+    };
+    var t1 = solveAssignment(n, state.pinned1, null, pref1);
+
+    // 各都市に1軍を送っている人を求める
+    var senderOf1 = new Array(n).fill(null);
+    for(var s=0; s<n; s++){
+      if(t1[s] != null) senderOf1[t1[s]] = s;
+    }
+    // ルール3: 弱い人の1軍が入る都市には、強い人の2軍を入れる
+    var pref2 = function(sender, city){
+      var s1 = senderOf1[city];
+      if(s1 == null) return 0;
+      return Math.abs(sender - (n - 1 - s1));
+    };
+    var t2 = solveAssignment(n, state.pinned2, t1, pref2);
+
     state.target1 = t1;
     state.target2 = t2;
     if(!state.matchView) state.matchView = 'city';
@@ -1097,6 +1125,7 @@
       html += '<section class="panel">';
       html += '<button class="btn btn-primary btn-block" data-action="auto-match" '+(n<3?'disabled':'')+'>自動マッチングを作成</button>';
       if(n < 3) html += '<p class="note">今回参加が3人以上でマッチングを作成できます</p>';
+      html += '<p class="note" style="text-align:left;">名簿の並び順(強さ順)をもとに、弱い都市へ強い人の1軍/弱い人の1軍が入る都市へ強い人の2軍、が優先されます</p>';
       html += '<p class="note">📌固定した組み合わせは、自動マッチングを実行しても変わりません</p>';
       html += '</section>';
     }
