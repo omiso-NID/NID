@@ -1587,7 +1587,12 @@
       } else {
         html += '<p class="empty-state">まだ定型文がありません</p>';
       }
-      if(state.isAdmin) html += '<button class="btn btn-outline btn-block" data-action="add-notice">＋ 定型文を追加</button>';
+      if(state.isAdmin){
+        html += '<button class="btn btn-outline btn-block" data-action="add-notice">＋ 定型文を追加</button>';
+        if(cat.templates.length){
+          html += '<button class="btn btn-outline btn-block" data-action="open-manage-notices" style="margin-top:8px;">⚙ タイトル編集・並び替え</button>';
+        }
+      }
     } else {
       html += '<p class="empty-state">タブがありません</p>';
     }
@@ -1653,6 +1658,21 @@
       });
       inner += '</div>';
       inner += '<div class="modal-actions"><button class="btn btn-ice" data-action="modal-cancel">閉じる</button></div></div>';
+    } else if(m.type === 'manage-notices'){
+      var mnCat = findCategory(state.activeCategory);
+      inner = '<div class="modal"><h3>'+(mnCat?escapeHtml(mnCat.name):'')+' のタイトル編集</h3>';
+      inner += '<p class="note" style="text-align:left;margin:-4px 0 10px;">⠿を押さえたまま上下にスライドすると並び替えできます</p>';
+      inner += '<div class="cat-edit-list" id="notice-edit-list">';
+      if(mnCat){
+        mnCat.templates.forEach(function(t){
+          inner += '<div class="cat-edit-row" data-notice-id="'+t.id+'">' +
+            '<span class="drag-handle" aria-hidden="true">⠿</span>' +
+            '<input type="text" data-action="rename-notice" data-noticeid="'+t.id+'" value="'+escapeHtml(t.title)+'" maxlength="30" />' +
+            '</div>';
+        });
+      }
+      inner += '</div>';
+      inner += '<div class="modal-actions"><button class="btn btn-ice" data-action="modal-cancel">閉じる</button></div></div>';
     } else if(m.type === 'admin-menu'){
       inner = '<div class="modal"><h3>管理者モード</h3>' +
         '<p style="color:var(--muted);">現在、編集操作ができる状態です。</p>' +
@@ -1670,10 +1690,10 @@
     }
     el.innerHTML = '<div class="modal-backdrop" data-action="modal-cancel"></div>' + inner;
     if(m.type === 'manage-categories') attachCategoryDragHandlers();
+    if(m.type === 'manage-notices') attachNoticeDragHandlers();
   }
 
-  function attachCategoryDragHandlers(){
-    var list = document.querySelector('.cat-edit-list');
+  function makeListDraggable(list, idAttr, onCommit){
     if(!list) return;
     var handles = list.querySelectorAll('.drag-handle');
     handles.forEach(function(handle){
@@ -1728,14 +1748,8 @@
           row.style.transform = '';
           row.style.position = '';
           row.style.zIndex = '';
-          var newOrderIds = Array.prototype.slice.call(list.children).map(function(r){ return r.dataset.catId; });
-          var newCategories = newOrderIds.map(function(id){
-            return state.noticeCategories.find(function(c){ return c.id === id; });
-          }).filter(Boolean);
-          if(newCategories.length === state.noticeCategories.length){
-            state.noticeCategories = newCategories;
-            saveNotices();
-          }
+          var newOrderIds = Array.prototype.slice.call(list.children).map(function(r){ return r.dataset[idAttr]; });
+          onCommit(newOrderIds);
           render();
         }
 
@@ -1743,6 +1757,32 @@
         document.addEventListener('pointerup', onUp);
         document.addEventListener('pointercancel', onUp);
       };
+    });
+  }
+
+  function attachCategoryDragHandlers(){
+    makeListDraggable(document.querySelector('.cat-edit-list'), 'catId', function(newOrderIds){
+      var newCategories = newOrderIds.map(function(id){
+        return state.noticeCategories.find(function(c){ return c.id === id; });
+      }).filter(Boolean);
+      if(newCategories.length === state.noticeCategories.length){
+        state.noticeCategories = newCategories;
+        saveNotices();
+      }
+    });
+  }
+
+  function attachNoticeDragHandlers(){
+    var cat = findCategory(state.activeCategory);
+    if(!cat) return;
+    makeListDraggable(document.getElementById('notice-edit-list'), 'noticeId', function(newOrderIds){
+      var newTemplates = newOrderIds.map(function(id){
+        return cat.templates.find(function(t){ return t.id === id; });
+      }).filter(Boolean);
+      if(newTemplates.length === cat.templates.length){
+        cat.templates = newTemplates;
+        saveNotices();
+      }
     });
   }
 
@@ -1953,6 +1993,10 @@
         if(!state.isAdmin) break;
         openModal({ type:'manage-categories' });
         break;
+      case 'open-manage-notices':
+        if(!state.isAdmin) break;
+        openModal({ type:'manage-notices' });
+        break;
       case 'delete-category':
         if(!state.isAdmin) break;
         var cid = btn.dataset.id;
@@ -2040,6 +2084,17 @@
         case 'set-g-rest-bow-pct': g.restBow = (gNum != null && remPerNow) ? round0(remPerNow * gNum / 100) : (gNum==null?null:0); break;
       }
       saveGarrison(); render();
+      return;
+    }
+    var renameNoticeInput = e.target.closest('input[data-action="rename-notice"]');
+    if(renameNoticeInput){
+      if(!state.isAdmin) return;
+      var newTitle = renameNoticeInput.value.trim();
+      var noticeToRename = findNotice(renameNoticeInput.dataset.noticeid);
+      if(noticeToRename && newTitle){
+        noticeToRename.title = newTitle;
+        saveNotices(); render();
+      }
       return;
     }
     var renameCatInput = e.target.closest('input[data-action="rename-category"]');
