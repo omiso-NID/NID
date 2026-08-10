@@ -1401,12 +1401,18 @@
       html += '<p class="note" style="margin:0 0 8px;">登録 '+total+'人</p>';
       html += '<ul class="member-list">';
       var order = state.members.map(function(m,i){ return { m:m, origIndex:i }; });
-      if(state.rosterSort === 'combined'){
-        order.sort(function(a,b){
+      order.sort(function(a,b){
+        var pa = a.m.participating !== false ? 0 : 1;
+        var pb = b.m.participating !== false ? 0 : 1;
+        if(pa !== pb) return pa - pb;
+        if(state.rosterSort === 'combined'){
           var d = levelScore(b.m) - levelScore(a.m);
-          return d !== 0 ? d : parsePowerValue(b.m.power) - parsePowerValue(a.m.power);
-        });
-      }
+          if(d !== 0) return d;
+          return parsePowerValue(b.m.power) - parsePowerValue(a.m.power);
+        }
+        return a.origIndex - b.origIndex;
+      });
+      var displayReordered = order.some(function(pair, idx){ return pair.origIndex !== idx; });
       order.forEach(function(pair){
         var m = pair.m, i = pair.origIndex;
         html += '<li class="member-row'+(m.participating===false?' member-row-off':'')+'">';
@@ -1421,8 +1427,8 @@
           '<span class="member-name">'+escapeHtml(m.name)+'</span>';
         if(state.isAdmin){
           html += '<span class="row-actions">' +
-            '<button data-action="up" data-idx="'+i+'" '+(i===0||state.rosterSort!=='default'?'disabled':'')+' aria-label="上へ">▲</button>' +
-            '<button data-action="down" data-idx="'+i+'" '+(i===total-1||state.rosterSort!=='default'?'disabled':'')+' aria-label="下へ">▼</button>' +
+            '<button data-action="up" data-idx="'+i+'" '+(i===0||displayReordered?'disabled':'')+' aria-label="上へ">▲</button>' +
+            '<button data-action="down" data-idx="'+i+'" '+(i===total-1||displayReordered?'disabled':'')+' aria-label="下へ">▼</button>' +
             '<button data-action="remove" data-idx="'+i+'" aria-label="削除">✕</button>' +
           '</span>';
         }
@@ -1450,7 +1456,7 @@
         html += '</li>';
       });
       html += '</ul>';
-      if(state.rosterSort !== 'default') html += '<p class="note">並び替え中は▲▼での順位変更はできません(「名簿順」に戻すと使えます)</p>';
+      if(displayReordered) html += '<p class="note">✅の人が上に表示されている間や並び替え中は、▲▼での順位変更はできません(「名簿順」かつ✅の増減がない状態で使えます)</p>';
       if(state.isAdmin) html += '<button class="link-btn" data-action="clear-members">名簿を全て削除</button>';
     } else {
       html += '<p class="empty-state">メンバーが未登録です</p>';
@@ -1904,6 +1910,15 @@
         gSearchEl.value = '';
         gSearchEl.value = gv;
         state.garrisonSearchFocus = false;
+      }
+    }
+    if(state.tab === 'notice'){
+      var pillRow = document.querySelector('.category-pills');
+      var activePill = pillRow ? pillRow.querySelector('.pill-active') : null;
+      if(pillRow && activePill){
+        var desired = activePill.offsetLeft - (pillRow.clientWidth - activePill.offsetWidth) / 2;
+        var maxScroll = pillRow.scrollWidth - pillRow.clientWidth;
+        pillRow.scrollLeft = Math.max(0, Math.min(desired, maxScroll));
       }
     }
   }
